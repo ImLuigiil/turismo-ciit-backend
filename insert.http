@@ -1,0 +1,13 @@
+###
+# Crear Usuario Administrador (de nuevo, para asegurar hasheo)
+POST http://localhost:3000/usuarios
+Content-Type: application/json
+
+{
+  "idUsuario": 4,
+  "rolIdRol": 1,
+  "nombre": "Admin Maestro4",
+  "contrasena": "admin123",
+  "correo": "admin@ciit4.com",
+  "usuariocol": "admin_ciit4"
+}

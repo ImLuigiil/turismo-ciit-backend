@@ -1,0 +1,14 @@
+{
+  "type": "mysql",
+  "host": "localhost",
+  "port": 3306,
+  "username": "root",
+  "password": "",
+  "database": "turismobd",
+  "entities": ["dist/**/*.entity{.ts,.js}"], 
+  "migrationsTableName": "migrations", 
+  "migrations": ["dist/migrations/*.js"], 
+  "cli": {
+    "migrationsDir": "src/migrations"
+  }
+}

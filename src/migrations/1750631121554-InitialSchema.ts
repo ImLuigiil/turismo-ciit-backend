@@ -1,0 +1,121 @@
+import { MigrationInterface, QueryRunner } from "typeorm";
+
+export class InitialSchema1750631121554 implements MigrationInterface {
+    name = 'InitialSchema1750631121554'
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`CREATE TABLE \`proyectoResidencia\` (\`id_residencia\` int NOT NULL, \`nombre\` varchar(45) NULL, \`descripcion\` varchar(45) NULL, \`nombreAlumno\` varchar(45) NULL, \`ciclo\` varchar(45) NULL, UNIQUE INDEX \`IDX_ded14bdfdc3dbb9a605323a403\` (\`nombre\`), PRIMARY KEY (\`id_residencia\`)) ENGINE=InnoDB`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`descripcion\` \`descripcion\` varchar(512) NULL`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`comunidad\` \`comunidad\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`no_capitulos\` \`no_capitulos\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`directorio\` \`directorio\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`fecha_inicio\` \`fecha_inicio\` date NULL`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`fecha_fin_aprox\` \`fecha_fin_aprox\` date NULL`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`fase_actual\` \`fase_actual\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`comunidad\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`comunidad\` CHANGE \`ubicacion\` \`ubicacion\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`comunidad\` CHANGE \`poblacion\` \`poblacion\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`fecha\` \`fecha\` date NULL`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`hora\` \`hora\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`lugar\` \`lugar\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`tema\` \`tema\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`status\` \`status\` tinyint NULL`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`tipo_asignador\` \`tipo_asignador\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`solicitud\` \`solicitud\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`solicitud_asignada\` \`solicitud_asignada\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`status\` \`status\` tinyint NULL`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`tiempo_aprox\` \`tiempo_aprox\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`comite\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`comite\` CHANGE \`NoMiembros\` \`NoMiembros\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`comite\` CHANGE \`director_comite\` \`director_comite\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`capacitacion\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`capacitacion\` CHANGE \`duracion\` \`duracion\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`capacitacion\` CHANGE \`tema\` \`tema\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`descripcion\` \`descripcion\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`status\` \`status\` tinyint NULL`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`tiempo_aprox\` \`tiempo_aprox\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`descripcion\` \`descripcion\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`status\` \`status\` tinyint NULL`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`tiempo_aprox\` \`tiempo_aprox\` int NULL`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`valor_agregado\` \`valor_agregado\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`descripcion\` \`descripcion\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`status\` \`status\` tinyint NULL`);
+        await queryRunner.query(`ALTER TABLE \`rol\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`contraseña\` \`contraseña\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`correo\` \`correo\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`usuariocol\` \`usuariocol\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`diplomado\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`diplomado\` CHANGE \`link\` \`link\` varchar(255) NULL`);
+        await queryRunner.query(`ALTER TABLE \`diplomado\` CHANGE \`fecha_subida\` \`fecha_subida\` date NULL`);
+        await queryRunner.query(`ALTER TABLE \`curso\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`curso\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL`);
+        await queryRunner.query(`ALTER TABLE \`curso\` CHANGE \`link\` \`link\` varchar(255) NULL`);
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`ALTER TABLE \`curso\` CHANGE \`link\` \`link\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`curso\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`curso\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`diplomado\` CHANGE \`fecha_subida\` \`fecha_subida\` date NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`diplomado\` CHANGE \`link\` \`link\` varchar(255) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`diplomado\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`usuariocol\` \`usuariocol\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`correo\` \`correo\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`contraseña\` \`contraseña\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`usuario\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`rol\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`status\` \`status\` tinyint NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`descripcion\` \`descripcion\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`promocion\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`valor_agregado\` \`valor_agregado\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`tiempo_aprox\` \`tiempo_aprox\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`status\` \`status\` tinyint NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`descripcion\` \`descripcion\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`experiencia_turistica\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`tiempo_aprox\` \`tiempo_aprox\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`status\` \`status\` tinyint NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`descripcion\` \`descripcion\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`tipo\` \`tipo\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`recurso_turistico\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`capacitacion\` CHANGE \`tema\` \`tema\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`capacitacion\` CHANGE \`duracion\` \`duracion\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`capacitacion\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`comite\` CHANGE \`director_comite\` \`director_comite\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`comite\` CHANGE \`NoMiembros\` \`NoMiembros\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`comite\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`tiempo_aprox\` \`tiempo_aprox\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`status\` \`status\` tinyint NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`solicitud_asignada\` \`solicitud_asignada\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`solicitud\` \`solicitud\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`tipo_asignador\` \`tipo_asignador\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`asignacion_recurso\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`status\` \`status\` tinyint NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`tema\` \`tema\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`lugar\` \`lugar\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`hora\` \`hora\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`reunion\` CHANGE \`fecha\` \`fecha\` date NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`comunidad\` CHANGE \`poblacion\` \`poblacion\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`comunidad\` CHANGE \`ubicacion\` \`ubicacion\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`comunidad\` CHANGE \`nombre\` \`nombre\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`fase_actual\` \`fase_actual\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`fecha_fin_aprox\` \`fecha_fin_aprox\` date NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`fecha_inicio\` \`fecha_inicio\` date NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`directorio\` \`directorio\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`no_capitulos\` \`no_capitulos\` int NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`comunidad\` \`comunidad\` varchar(45) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`ALTER TABLE \`proyecto\` CHANGE \`descripcion\` \`descripcion\` varchar(512) NULL DEFAULT 'NULL'`);
+        await queryRunner.query(`DROP INDEX \`IDX_ded14bdfdc3dbb9a605323a403\` ON \`proyectoResidencia\``);
+        await queryRunner.query(`DROP TABLE \`proyectoResidencia\``);
+    }
+
+}
