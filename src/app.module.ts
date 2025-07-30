@@ -54,11 +54,11 @@ import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
     TypeOrmModule.forRoot({
       type: 'mysql',
       // --- CAMBIO CLAVE: Leer credenciales de variables de entorno ---
-      host: process.env.DATABASE_HOST,
-      port: (process.env.DATABASE_PORT, 10), // Convertir a número
-      username: process.env.DATABASE_USER,
-      password: process.env.DATABASE_PASSWORD,
-      database: process.env.DATABASE_NAME,
+          host: process.env.MYSQL_ADDON_HOST,
+          port: (process.env.MYSQL_ADDON_PORT, 10),
+          username: process.env.MYSQL_ADDON_USER,
+          password: process.env.MYSQL_ADDON_PASSWORD,
+          database: process.env.MYSQL_ADDON_DB,
       // --- FIN CAMBIO CLAVE ---
       entities: [
         // Lista todas tus entidades aquí para que TypeORM las reconozca

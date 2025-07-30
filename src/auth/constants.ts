@@ -1,4 +1,4 @@
 // src/auth/constants.ts
 export const jwtConstants = {
-  secret: process.env.JWT_SECRET || 'tuSuperSecretoJWT_NoCompartirEnProduccion',
+  secret: process.env.JWT_SECRET || 'tuSuperSecretoJWT_NoCompartirEnProduccion', // Usar fallback para desarrollo local
 };
