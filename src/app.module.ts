@@ -55,7 +55,7 @@ import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
       type: 'mysql',
       // --- CAMBIO CLAVE: Leer credenciales de variables de entorno ---
           host: process.env.MYSQL_ADDON_HOST,
-          port: (process.env.MYSQL_ADDON_PORT, 10),
+          port: 3306,
           username: process.env.MYSQL_ADDON_USER,
           password: process.env.MYSQL_ADDON_PASSWORD,
           database: process.env.MYSQL_ADDON_DB,
