@@ -4,28 +4,16 @@ import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import { SeedService } from './seed/seed.service'; // ¡Importa el SeedService!
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // --- CONFIGURACIÓN CRÍTICA DE CORS PARA MÚLTIPLES ORÍGENES ---
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
-  let allowedOrigins: string | string[];
-
-  if (frontendUrl.includes(',')) {
-    // Si la variable de entorno contiene comas, la dividimos en un array
-    allowedOrigins = frontendUrl.split(',').map(url => url.trim());
-  } else {
-    // Si no hay comas, es un solo origen
-    allowedOrigins = frontendUrl;
-  }
-
   app.enableCors({
-    origin: allowedOrigins, // Ahora puede ser un string o un array de strings
+    origin: process.env.FRONTEND_URL || 'http://localhost:3001', 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
-  // --- FIN CONFIGURACIÓN CORS ---
 
   app.useGlobalPipes(new ValidationPipe({
     whitelist: true,
@@ -38,5 +26,12 @@ async function bootstrap() {
   });
 
   await app.listen(process.env.PORT || 3000);
+
+  // --- ¡CORRECCIÓN CLAVE AQUÍ! Descomentar para ejecutar el sembrado ---
+  // Este código se ejecutará una vez al inicio del servidor.
+  // ¡COMENTA O ELIMINA ESTAS LÍNEAS DESPUÉS DE LA PRIMERA EJECUCIÓN EXITOSA!
+  const seedService = app.get(SeedService);
+  await seedService.seedOaxacaMunicipalities();
+  // --- FIN CORRECCIÓN ---
 }
 bootstrap();
