@@ -14,7 +14,7 @@ async function bootstrap() {
     // Utiliza la variable de entorno FRONTEND_URL para el origen en producción.
     // Asegúrate de que esta variable esté configurada en Clever Cloud con la URL de Netlify.
     // Para desarrollo local, sigue usando 'http://localhost:3001'.
-    origin: process.env.FRONTEND_URL || 'http://localhost:3001', 
+    origin: process.env.FRONTEND_URL, 
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });
