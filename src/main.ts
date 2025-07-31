@@ -8,13 +8,20 @@ import { join } from 'path';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // --- CONFIGURACIÓN CRÍTICA DE CORS ---
+  // --- CONFIGURACIÓN CRÍTICA DE CORS PARA MÚLTIPLES ORÍGENES ---
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3001';
+  let allowedOrigins: string | string[];
+
+  if (frontendUrl.includes(',')) {
+    // Si la variable de entorno contiene comas, la dividimos en un array
+    allowedOrigins = frontendUrl.split(',').map(url => url.trim());
+  } else {
+    // Si no hay comas, es un solo origen
+    allowedOrigins = frontendUrl;
+  }
+
   app.enableCors({
-    // ¡CAMBIO CLAVE AQUÍ!
-    // Utiliza la variable de entorno FRONTEND_URL para el origen en producción.
-    // Asegúrate de que esta variable esté configurada en Clever Cloud con la URL de Netlify.
-    // Para desarrollo local, sigue usando 'http://localhost:3001'.
-    origin: process.env.FRONTEND_URL, 
+    origin: allowedOrigins, // Ahora puede ser un string o un array de strings
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
     credentials: true,
   });

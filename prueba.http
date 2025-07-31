@@ -1,17 +1,1 @@
-###
-# Crear Usuario Administrador
-# Endpoint: POST http://localhost:3000/usuarios
-# (O la URL de tu backend de Clever Cloud si estás probando el backend desplegado)
-POST http://localhost:3000/usuarios
-Content-Type: application/json
-
-{
-  "idUsuario": 1,        // Asegúrate de que este ID sea único y no esté en uso.
-                         // Si id_usuario es AUTO_INCREMENT en tu DB, puedes omitirlo del body
-                         // y el backend lo generará automáticamente.
-  "rolIdRol": 1,         // ID del rol 'administrador' (el que insertaste en el paso 1)
-  "nombre": "Admin Maestro",
-  "contrasena": "Luislime7", // ¡La contraseña en texto plano para que el backend la hashee!
-  "correo": "admin@ciit.com",
-  "usuariocol": "Admin_ciit" // El nombre de usuario para iniciar sesión
-}
+http://localhost:3000/proyectos/114
