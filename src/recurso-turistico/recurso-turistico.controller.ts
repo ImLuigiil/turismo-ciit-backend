@@ -3,7 +3,7 @@ import { RecursoTuristicoService } from './recurso-turistico.service';
 import { CreateRecursoTuristicoDto } from './dto/create-recurso-turistico.dto';
 import { UpdateRecursoTuristicoDto } from './dto/update-recurso-turistico.dto';
 
-@Controller('recursos-turisticos') // Endpoint: /recursos-turisticos
+@Controller('recursos-turisticos')
 export class RecursoTuristicoController {
   constructor(private readonly recursoTuristicoService: RecursoTuristicoService) {}
 
@@ -18,7 +18,6 @@ export class RecursoTuristicoController {
     return this.recursoTuristicoService.findAll();
   }
 
-  // Este endpoint necesita todas las partes de la clave primaria compuesta en la URL
   @Get(':idRecurso/:comiteId/:comiteReunionId/:comiteAsignacionId')
   findOne(
     @Param('idRecurso') idRecurso: string,

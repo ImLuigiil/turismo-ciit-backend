@@ -3,7 +3,7 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { ConfigModule } from '@nestjs/config'; // Importa ConfigModule
+import { ConfigModule } from '@nestjs/config';
 
 // Importa TODOS tus módulos
 import { ProyectoModule } from './proyecto/proyecto.module';
@@ -24,8 +24,6 @@ import { AuthModule } from './auth/auth.module';
 import { PersonaProyectoModule } from './persona-proyecto/persona-proyecto.module';
 import { SeedModule } from './seed/seed.module';
 import { ProyectoImagenModule } from './proyecto-imagen/proyecto-imagen.module';
-
-// Importa TODAS tus entidades para TypeOrmModule.forRoot
 import { Proyecto } from './proyecto/proyecto.entity';
 import { Comunidad } from './comunidad/comunidad.entity';
 import { Reunion } from './reunion/reunion.entity';
@@ -46,22 +44,17 @@ import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
 
 @Module({
   imports: [
-    // Configura ConfigModule para cargar variables de entorno
     ConfigModule.forRoot({
-      isGlobal: true, // Hace que ConfigService esté disponible globalmente
+      isGlobal: true, 
     }),
-    // Configura TypeORM para la conexión a la base de datos
     TypeOrmModule.forRoot({
       type: 'mysql',
-      // --- CAMBIO CLAVE: Leer credenciales de variables de entorno ---
           host: process.env.MYSQL_ADDON_HOST,
           port: 3306,
           username: process.env.MYSQL_ADDON_USER,
           password: process.env.MYSQL_ADDON_PASSWORD,
           database: process.env.MYSQL_ADDON_DB,
-      // --- FIN CAMBIO CLAVE ---
       entities: [
-        // Lista todas tus entidades aquí para que TypeORM las reconozca
         Proyecto,
         Comunidad,
         Reunion,
@@ -79,14 +72,8 @@ import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
         PersonaProyecto,
         ProyectoImagen,
       ],
-      // --- CAMBIO CLAVE: synchronize: false para producción ---
-      synchronize: false, // ¡MUY IMPORTANTE: Cambiar a FALSE para producción!
-      // En producción, se recomienda usar migraciones para gestionar el esquema de la DB.
-      // Ejemplo de configuración de migraciones (si las implementas):
-      // migrations: [__dirname + '/../dist/migrations/*.js'],
-      // cli: { migrationsDir: 'src/migrations' },
+      synchronize: false, 
     }),
-    // Importa todos los módulos de tu aplicación
     ProyectoModule,
     ComunidadModule,
     ReunionModule,
@@ -101,9 +88,9 @@ import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
     DiplomadoModule,
     CursoModule,
     ProyectoResidenciaModule,
-    AuthModule, // Maneja la autenticación (JWT_SECRET se lee vía ConfigService)
+    AuthModule,
     PersonaProyectoModule,
-    SeedModule, // Módulo para el sembrado de datos (ejecución única)
+    SeedModule,
     ProyectoImagenModule,
   ],
   controllers: [AppController],

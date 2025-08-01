@@ -3,7 +3,7 @@ import { CapacitacionService } from './capacitacion.service';
 import { CreateCapacitacionDto } from './dto/create-capacitacion.dto';
 import { UpdateCapacitacionDto } from './dto/update-capacitacion.dto';
 
-@Controller('capacitaciones') // Endpoint: /capacitaciones
+@Controller('capacitaciones') 
 export class CapacitacionController {
   constructor(private readonly capacitacionService: CapacitacionService) {}
 
@@ -18,7 +18,6 @@ export class CapacitacionController {
     return this.capacitacionService.findAll();
   }
 
-  // Este endpoint necesita todas las partes de la clave primaria compuesta en la URL
   @Get(':idCapacitacion/:comunidadId/:comiteId/:comiteReunionId/:comiteAsignacionId')
   findOne(
     @Param('idCapacitacion') idCapacitacion: string,

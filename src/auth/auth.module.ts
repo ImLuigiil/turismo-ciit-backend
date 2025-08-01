@@ -7,21 +7,21 @@ import { PassportModule } from '@nestjs/passport';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { Usuario } from '../usuario/usuario.entity';
-import { Rol } from '../rol/rol.entity'; // Asegúrate de importar la entidad Rol
+import { Rol } from '../rol/rol.entity';
 import { JwtStrategy } from './jwt.strategy';
 import { jwtConstants } from './constants';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Usuario, Rol]), // Importa las entidades Usuario y Rol
+    TypeOrmModule.forFeature([Usuario, Rol]),
     PassportModule,
     JwtModule.register({
       secret: jwtConstants.secret,
-      signOptions: { expiresIn: '60m' }, // Token expira en 60 minutos
+      signOptions: { expiresIn: '60m' }, 
     }),
   ],
   providers: [AuthService, JwtStrategy],
   controllers: [AuthController],
-  exports: [AuthService], // Exporta AuthService si otros módulos lo necesitan
+  exports: [AuthService],
 })
 export class AuthModule {}

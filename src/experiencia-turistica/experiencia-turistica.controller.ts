@@ -3,7 +3,7 @@ import { ExperienciaTuristicaService } from './experiencia-turistica.service';
 import { CreateExperienciaTuristicaDto } from './dto/create-experiencia-turistica.dto';
 import { UpdateExperienciaTuristicaDto } from './dto/update-experiencia-turistica.dto';
 
-@Controller('experiencias-turisticas') // Endpoint: /experiencias-turisticas
+@Controller('experiencias-turisticas')
 export class ExperienciaTuristicaController {
   constructor(private readonly experienciaTuristicaService: ExperienciaTuristicaService) {}
 
@@ -18,7 +18,6 @@ export class ExperienciaTuristicaController {
     return this.experienciaTuristicaService.findAll();
   }
 
-  // Este endpoint necesita todas las partes de la clave primaria compuesta en la URL
   @Get(':idExperiencia/:comiteId/:comiteReunionId/:comiteAsignacionId/:proyectoId')
   findOne(
     @Param('idExperiencia') idExperiencia: string,

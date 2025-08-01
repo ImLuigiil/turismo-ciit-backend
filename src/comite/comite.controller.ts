@@ -3,7 +3,7 @@ import { ComiteService } from './comite.service';
 import { CreateComiteDto } from './dto/create-comite.dto';
 import { UpdateComiteDto } from './dto/update-comite.dto';
 
-@Controller('comites') // Endpoint: /comites
+@Controller('comites') 
 export class ComiteController {
   constructor(private readonly comiteService: ComiteService) {}
 

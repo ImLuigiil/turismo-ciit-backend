@@ -3,7 +3,7 @@ import { UsuarioService } from './usuario.service';
 import { CreateUsuarioDto } from './dto/create-usuario.dto';
 import { UpdateUsuarioDto } from './dto/update-usuario.dto';
 
-@Controller('usuarios') // Endpoint: /usuarios
+@Controller('usuarios') 
 export class UsuarioController {
   constructor(private readonly usuarioService: UsuarioService) {}
 
@@ -18,7 +18,6 @@ export class UsuarioController {
     return this.usuarioService.findAll();
   }
 
-  // Este endpoint necesita ambas partes de la clave primaria compuesta en la URL
   @Get(':idUsuario/:rolId')
   findOne(
     @Param('idUsuario') idUsuario: string,

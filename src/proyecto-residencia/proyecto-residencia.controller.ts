@@ -3,7 +3,7 @@ import { ProyectoResidenciaService } from './proyecto-residencia.service';
 import { CreateProyectoResidenciaDto } from './dto/create-proyecto-residencia.dto';
 import { UpdateProyectoResidenciaDto } from './dto/update-proyecto-residencia.dto';
 
-@Controller('proyectos-residencia') // Endpoint: /proyectos-residencia
+@Controller('proyectos-residencia')
 export class ProyectoResidenciaController {
   constructor(private readonly proyectoResidenciaService: ProyectoResidenciaService) {}
 

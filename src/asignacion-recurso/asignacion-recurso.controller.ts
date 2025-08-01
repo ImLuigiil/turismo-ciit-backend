@@ -3,7 +3,7 @@ import { AsignacionRecursoService } from './asignacion-recurso.service';
 import { CreateAsignacionRecursoDto } from './dto/create-asignacion-recurso.dto';
 import { UpdateAsignacionRecursoDto } from './dto/update-asignacion-recurso.dto';
 
-@Controller('asignacion-recursos') // Endpoint: /asignacion-recursos
+@Controller('asignacion-recursos') 
 export class AsignacionRecursoController {
   constructor(private readonly asignacionRecursoService: AsignacionRecursoService) {}
 

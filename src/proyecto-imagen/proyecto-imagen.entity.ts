@@ -1,6 +1,6 @@
 // src/proyecto-imagen/proyecto-imagen.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
-import { Proyecto } from '../proyecto/proyecto.entity'; // Importa la entidad Proyecto
+import { Proyecto } from '../proyecto/proyecto.entity'; 
 
 @Entity('proyecto_imagen')
 export class ProyectoImagen {
@@ -10,13 +10,13 @@ export class ProyectoImagen {
   @Column({ name: 'url', length: 255, nullable: false, type: 'varchar' })
   url: string;
 
-  @Column({ name: 'es_principal', type: 'tinyint', default: 0, nullable: true }) // tinyint para 0/1
+  @Column({ name: 'es_principal', type: 'tinyint', default: 0, nullable: true }) 
   esPrincipal: number | null;
 
   @Column({ name: 'orden', type: 'int', default: 0, nullable: true })
   orden: number | null;
 
-  @Column({ name: 'proyecto_id_proyecto' }) // Columna FK directa
+  @Column({ name: 'proyecto_id_proyecto' }) 
   proyectoIdProyecto: number;
 
   // Relación Many-to-One con Proyecto

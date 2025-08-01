@@ -5,7 +5,7 @@ import { ConfigModule as NestConfigModule } from '@nestjs/config';
 @Module({
   imports: [
     NestConfigModule.forRoot({
-      isGlobal: true, // Hace que ConfigService esté disponible globalmente
+      isGlobal: true,
     }),
   ],
 })

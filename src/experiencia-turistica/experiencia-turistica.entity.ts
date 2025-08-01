@@ -7,7 +7,6 @@ export class ExperienciaTuristica {
   @PrimaryColumn({ name: 'id_experiencia' })
   idExperiencia: number;
 
-  // Partes de la clave primaria compuesta y claves foráneas
   @PrimaryColumn({ name: 'comite_id_comite' })
   comiteIdComite: number;
 
@@ -30,7 +29,7 @@ export class ExperienciaTuristica {
   descripcion: string;
 
   @Column({ name: 'status', type: 'tinyint', nullable: true })
-  status: number; // O boolean
+  status: number;
 
   @Column({ name: 'tiempo_aprox', nullable: true })
   tiempoAprox: number;
@@ -38,7 +37,6 @@ export class ExperienciaTuristica {
   @Column({ name: 'valor_agregado', length: 45, nullable: true })
   valorAgregado: string;
 
-  // Relación Many-to-One con Comite
   @ManyToOne(() => Comite, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn([
     { name: 'comite_id_comite', referencedColumnName: 'idComite' },
@@ -47,7 +45,6 @@ export class ExperienciaTuristica {
   ])
   comite: Comite;
 
-  // Relación Many-to-One con Proyecto
   @ManyToOne(() => Proyecto, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn({ name: 'proyecto_id_proyecto', referencedColumnName: 'idProyecto' })
   proyecto: Proyecto;

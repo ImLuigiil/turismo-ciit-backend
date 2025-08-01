@@ -1,6 +1,6 @@
 // src/curso/dto/create-curso.dto.ts
 import { IsString, IsNotEmpty, IsOptional, IsUrl, IsIn } from 'class-validator';
-import { Type } from 'class-transformer'; // Necesario si hay transformaciones de tipo
+import { Type } from 'class-transformer';
 
 export class CreateCursoDto {
 

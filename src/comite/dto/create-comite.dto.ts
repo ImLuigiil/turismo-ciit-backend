@@ -7,11 +7,11 @@ export class CreateComiteDto {
 
   @IsNumber()
   @IsNotEmpty()
-  reunionIdReunion: number; // Necesario para la clave primaria compuesta y la FK
+  reunionIdReunion: number;
 
   @IsNumber()
   @IsNotEmpty()
-  asignacionRecursoIdAsg: number; // Necesario para la clave primaria compuesta y la FK
+  asignacionRecursoIdAsg: number;
 
   @IsString()
   @IsOptional()

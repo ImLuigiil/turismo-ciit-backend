@@ -2,7 +2,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm'; // ¡Importa DataSource!
+import { Repository, DataSource } from 'typeorm';
 import { Comunidad } from '../comunidad/comunidad.entity';
 import axios from 'axios';
 
@@ -14,7 +14,7 @@ export class SeedService {
     @InjectRepository(Comunidad)
     private comunidadesRepository: Repository<Comunidad>,
     private configService: ConfigService,
-    private dataSource: DataSource, // ¡Inyecta el DataSource para acceder al QueryRunner!
+    private dataSource: DataSource, 
   ) {}
 
   async seedOaxacaMunicipalities() {
@@ -28,21 +28,16 @@ export class SeedService {
     const stateName = 'Oaxaca';
     const stateNameUpper = stateName.toUpperCase();
 
-    // Obtener un QueryRunner para ejecutar comandos SQL crudos
     const queryRunner = this.dataSource.createQueryRunner();
-    await queryRunner.connect(); // Conectar el queryRunner a la base de datos
+    await queryRunner.connect();
 
     try {
-      // --- ¡CORRECCIÓN CLAVE AQUÍ! Desactivar FK checks temporalmente ---
+
       this.logger.log('Desactivando verificaciones de claves foráneas...');
-      //await queryRunner.query('SET FOREIGN_KEY_CHECKS = 0;');
       
       this.logger.log('Limpiando tabla de comunidades antes de sembrar...');
-      //await this.comunidadesRepository.clear();
       
       this.logger.log('Activando verificaciones de claves foráneas...');
-      //await queryRunner.query('SET FOREIGN_KEY_CHECKS = 1;');
-      // --- FIN CORRECCIÓN ---
 
       const statesApiUrl = `https://api.copomex.com/query/get_estados?token=${apiKey}`;
       const statesResponse = await axios.get(statesApiUrl);
@@ -99,9 +94,8 @@ export class SeedService {
         this.logger.error('Respuesta de error de COPOMEX:', error.response.data);
       }
     } finally {
-      // --- ¡MUY IMPORTANTE! Asegurarse de liberar el queryRunner ---
-      await queryRunner.release(); // Libera el queryRunner
-      // --- FIN MUY IMPORTANTE ---
+
+      await queryRunner.release();
     }
   }
 }

@@ -3,7 +3,7 @@ import { PromocionService } from './promocion.service';
 import { CreatePromocionDto } from './dto/create-promocion.dto';
 import { UpdatePromocionDto } from './dto/update-promocion.dto';
 
-@Controller('promociones') // Endpoint: /promociones
+@Controller('promociones') 
 export class PromocionController {
   constructor(private readonly promocionService: PromocionService) {}
 
@@ -18,7 +18,6 @@ export class PromocionController {
     return this.promocionService.findAll();
   }
 
-  // Este endpoint necesita todas las partes de la clave primaria compuesta en la URL
   @Get(':idPromocion/:comiteId/:comiteReunionId/:comiteAsignacionId')
   findOne(
     @Param('idPromocion') idPromocion: string,

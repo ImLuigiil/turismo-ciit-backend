@@ -8,8 +8,8 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
-import * as PDFDocument from 'pdfkit'; // Importa pdfkit
-import { Response } from 'express'; // Importa Response de express
+import * as PDFDocument from 'pdfkit';
+import { Response } from 'express'; 
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -25,12 +25,11 @@ export class ProyectoController {
     return this.proyectoService.findOne(+id);
   }
 
-  // --- Endpoint para CREAR PROYECTO con MÚLTIPLES IMÁGENES ---
   @UseGuards(AuthGuard('jwt'))
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
-    FilesInterceptor('images', 15, { // Límite de 15 imágenes
+    FilesInterceptor('images', 15, { 
       storage: diskStorage({
         destination: './uploads/proyectos',
         filename: (req, file, cb) => {
@@ -38,20 +37,20 @@ export class ProyectoController {
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
-      fileFilter: (req, file, cb) => { // Filtro para solo permitir imágenes
+      fileFilter: (req, file, cb) => { 
         if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
           return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
         }
         cb(null, true);
       },
       limits: {
-        fileSize: 1024 * 1024 * 5 // Límite de 5MB por archivo
+        fileSize: 1024 * 1024 * 5
       }
     })
   )
   async create(
     @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: any, // Recibimos el body como 'any' para parsear manualmente
+    @Body() body: any, 
   ) {
     const createProyectoDto: CreateProyectoDto = {
       nombre: body.nombre,
@@ -78,7 +77,6 @@ export class ProyectoController {
     return this.proyectoService.createProjectWithImages(createProyectoDto, imagenes);
   }
 
-  // --- Endpoint para ACTUALIZAR PROYECTO con MÚLTIPLES IMÁGENES ---
   @UseGuards(AuthGuard('jwt'))
   @Put(':id')
   @UseInterceptors(
@@ -137,12 +135,11 @@ export class ProyectoController {
     return this.proyectoService.remove(+id);
   }
 
-  // --- NUEVO ENDPOINT: Generar Reporte PDF ---
   @Get(':id/report')
-  @UseGuards(AuthGuard('jwt')) // Proteger el acceso al reporte para administradores
+  @UseGuards(AuthGuard('jwt')) 
   async generateReport(
     @Param('id') id: string,
-    @Res() res: Response // Inyectar el objeto de respuesta de Express
+    @Res() res: Response 
   ) {
     const project = await this.proyectoService.getProjectReportData(+id);
 
@@ -150,28 +147,25 @@ export class ProyectoController {
       throw new NotFoundException(`Proyecto con ID ${id} no encontrado para generar reporte.`);
     }
 
-    const doc = new PDFDocument(); // Crea un nuevo documento PDF
+    const doc = new PDFDocument();
     const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
 
-    // Configurar encabezados de respuesta para descarga de PDF
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    doc.pipe(res); // Conecta el documento PDF al stream de respuesta HTTP
+    doc.pipe(res); 
 
-    // --- Contenido del PDF con formato mejorado ---
     doc.fontSize(20).text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
-    doc.moveDown(2); // Más espacio después del título principal
+    doc.moveDown(2); 
 
     doc.fontSize(14).text('Información General:', { underline: true });
-    doc.moveDown(1); // Espacio de 1 mínimo después del subtítulo
+    doc.moveDown(1); 
 
-    doc.fontSize(12); // Restablecer tamaño de fuente para los detalles
+    doc.fontSize(12); 
 
-    // Cada línea con label en negrita y valor normal, con espaciado
     doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
        .font('Helvetica').text(`${project.idProyecto}`);
-    doc.moveDown(0.5); // Espaciado entre líneas
+    doc.moveDown(0.5); 
 
     doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
@@ -203,9 +197,8 @@ export class ProyectoController {
 
     doc.font('Helvetica-Bold').text('Cambios de Nombre: ', { continued: true })
        .font('Helvetica').text(`${project.nombreCambiosCount || 0}`);
-    doc.moveDown(1); // Espacio después de la sección general
+    doc.moveDown(1);
 
-    // Justificación de Fase (si existe)
     if (project.justificacionFase) {
       doc.fontSize(14).text('Justificación de Último Cambio de Fase:', { underline: true });
       doc.moveDown(0.5);
@@ -213,15 +206,14 @@ export class ProyectoController {
       doc.moveDown(1);
     }
 
-    // Personas Involucradas
     doc.fontSize(14).text('Personas Involucradas:', { underline: true });
     doc.moveDown(0.5);
     if (project.personasDirectorio && project.personasDirectorio.length > 0) {
       project.personasDirectorio.forEach(persona => {
-        doc.fontSize(12); // Asegura el tamaño de fuente
+        doc.fontSize(12); 
         doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
-        doc.moveDown(0.2); // Pequeño espacio entre campos de la misma persona
+        doc.moveDown(0.2);
 
         if (persona.rolEnProyecto) {
           doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
@@ -233,14 +225,13 @@ export class ProyectoController {
              .font('Helvetica').text(`${persona.contacto}`);
           doc.moveDown(0.2);
         }
-        doc.moveDown(0.5); // Espacio entre personas
+        doc.moveDown(0.5);
       });
     } else {
       doc.fontSize(12).text('No hay personas involucradas registradas.');
     }
     doc.moveDown();
 
-    // Imágenes (solo las URLs)
     doc.fontSize(14).text('Imágenes del Proyecto:', { underline: true });
     doc.moveDown(0.5);
     if (project.imagenes && project.imagenes.length > 0) {
@@ -252,6 +243,6 @@ export class ProyectoController {
     }
     doc.moveDown();
 
-    doc.end(); // Finaliza el documento PDF
+    doc.end();
   }
 }

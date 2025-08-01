@@ -21,14 +21,14 @@ export class UsuarioService {
     return this.usuariosRepository.find();
   }
 
-  // Para findOne, update y remove, el controlador debe recibir las 2 IDs
+
   async findOne(idUsuario: number, rolId: number): Promise<Usuario> {
     const usuario = await this.usuariosRepository.findOne({
       where: {
         idUsuario: idUsuario,
         rolIdRol: rolId,
       },
-      relations: ['rol'], // Opcional: carga el objeto Rol relacionado
+      relations: ['rol'], 
     });
     if (!usuario) {
       throw new NotFoundException(`Usuario con ID ${idUsuario} y Rol ID ${rolId} no encontrado`);

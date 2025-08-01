@@ -22,47 +22,41 @@ export class DiplomadoController {
     return this.diplomadoService.findOne(+id);
   }
 
-  // --- Endpoint para AGREGAR/SUBIR DIPLOMADO ---
   @UseGuards(AuthGuard('jwt'))
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
-    FileInterceptor('file', { // 'file' es el nombre del campo en el formulario que contendrá el archivo
+    FileInterceptor('file', {
       storage: diskStorage({
-        destination: './uploads/diplomados', // Carpeta donde se guardarán los PDFs. Asegúrate de que exista.
+        destination: './uploads/diplomados',
         filename: (req, file, cb) => {
           const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
-      fileFilter: (req, file, cb) => { // Filtro para solo permitir PDFs
+      fileFilter: (req, file, cb) => { 
         if (!file.originalname.match(/\.(pdf)$/)) {
           return cb(new BadRequestException('Solo se permiten archivos PDF!'), false);
         }
         cb(null, true);
       },
       limits: {
-        fileSize: 1024 * 1024 * 5 // Límite de 5MB por archivo (ajusta según necesites)
+        fileSize: 1024 * 1024 * 5 
       }
     })
   )
   async create(
-    @UploadedFile() file: Express.Multer.File, // El archivo subido
-    @Body() createDiplomadoDto: CreateDiplomadoDto, // Los otros campos del formulario (llegarán como strings)
+    @UploadedFile() file: Express.Multer.File,
+    @Body() createDiplomadoDto: CreateDiplomadoDto,
   ) {
     if (!file) {
       throw new BadRequestException('Se requiere un archivo PDF para el diplomado.');
     }
-    // --- VERIFICACIÓN CLAVE: La URL se guarda como path relativo ---
     createDiplomadoDto.link = `/uploads/diplomados/${file.filename}`;
-    // --- FIN VERIFICACIÓN ---
-    
-    // Convertir a Number/Date si vienen como string de FormDat
     
     return this.diplomadoService.create(createDiplomadoDto);
   }
 
-  // --- Endpoint para ACTUALIZAR DIPLOMADO ---
   @UseGuards(AuthGuard('jwt'))
   @Put(':id')
   @UseInterceptors(

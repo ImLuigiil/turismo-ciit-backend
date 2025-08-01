@@ -9,6 +9,6 @@ import { PersonaProyecto } from './persona-proyecto.entity';
   imports: [TypeOrmModule.forFeature([PersonaProyecto])],
   controllers: [PersonaProyectoController],
   providers: [PersonaProyectoService],
-  exports: [PersonaProyectoService] // Exporta si el ProyectoService lo necesita
+  exports: [PersonaProyectoService] 
 })
 export class PersonaProyectoModule {}

@@ -3,7 +3,7 @@ import { ReunionService } from './reunion.service';
 import { CreateReunionDto } from './dto/create-reunion.dto';
 import { UpdateReunionDto } from './dto/update-reunion.dto';
 
-@Controller('reuniones') // Endpoint: /reuniones
+@Controller('reuniones')
 export class ReunionController {
   constructor(private readonly reunionService: ReunionService) {}
 

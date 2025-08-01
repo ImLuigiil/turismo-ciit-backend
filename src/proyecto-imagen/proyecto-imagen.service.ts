@@ -30,7 +30,6 @@ export class ProyectoImagenService {
     return imagen;
   }
 
-  // Nuevo método: encontrar imágenes por ID de proyecto
   async findByProyectoId(proyectoId: number): Promise<ProyectoImagen[]> {
     return this.proyectoImagenesRepository.find({ where: { proyectoIdProyecto: proyectoId }, order: { orden: 'ASC', idProyectoImagen: 'ASC' } });
   }

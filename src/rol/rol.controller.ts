@@ -3,7 +3,7 @@ import { RolService } from './rol.service';
 import { CreateRolDto } from './dto/create-rol.dto';
 import { UpdateRolDto } from './dto/update-rol.dto';
 
-@Controller('roles') // Endpoint: /roles
+@Controller('roles') 
 export class RolController {
   constructor(private readonly rolService: RolService) {}
 

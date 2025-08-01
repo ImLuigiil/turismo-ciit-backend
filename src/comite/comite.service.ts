@@ -37,7 +37,7 @@ export class ComiteService {
   }
 
   async update(idComite: number, reunionId: number, asignacionId: number, updateComiteDto: UpdateComiteDto): Promise<Comite> {
-    const comite = await this.findOne(idComite, reunionId, asignacionId); // Reutilizamos findOne
+    const comite = await this.findOne(idComite, reunionId, asignacionId);
     this.comitesRepository.merge(comite, updateComiteDto);
     return this.comitesRepository.save(comite);
   }

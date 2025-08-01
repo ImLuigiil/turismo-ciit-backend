@@ -6,7 +6,6 @@ export class Promocion {
   @PrimaryColumn({ name: 'id_promocion' })
   idPromocion: number;
 
-  // Partes de la clave primaria compuesta y clave foránea a Comite
   @PrimaryColumn({ name: 'comite_id_comite' })
   comiteIdComite: number;
 
@@ -26,9 +25,8 @@ export class Promocion {
   tipo: string;
 
   @Column({ name: 'status', type: 'tinyint', nullable: true })
-  status: number; // O boolean
+  status: number; 
 
-  // Relación Many-to-One con Comite (clave compuesta)
   @ManyToOne(() => Comite, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn([
     { name: 'comite_id_comite', referencedColumnName: 'idComite' },

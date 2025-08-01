@@ -6,7 +6,6 @@ export class RecursoTuristico {
   @PrimaryColumn({ name: 'id_recurso' })
   idRecurso: number;
 
-  // Partes de la clave primaria compuesta y claves foráneas
   @PrimaryColumn({ name: 'comite_id_comite' })
   comiteIdComite: number;
 
@@ -26,12 +25,11 @@ export class RecursoTuristico {
   descripcion: string;
 
   @Column({ name: 'status', type: 'tinyint', nullable: true })
-  status: number; // O boolean
+  status: number; 
 
   @Column({ name: 'tiempo_aprox', nullable: true })
   tiempoAprox: number;
 
-  // Relación Many-to-One con Comite (clave compuesta)
   @ManyToOne(() => Comite, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn([
     { name: 'comite_id_comite', referencedColumnName: 'idComite' },

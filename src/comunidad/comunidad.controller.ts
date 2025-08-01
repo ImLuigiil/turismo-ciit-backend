@@ -3,7 +3,7 @@ import { ComunidadService } from './comunidad.service';
 import { CreateComunidadDto } from './dto/create-comunidad.dto';
 import { UpdateComunidadDto } from './dto/update-comunidad.dto';
 
-@Controller('comunidades') // Endpoint: /comunidades
+@Controller('comunidades')
 export class ComunidadController {
   constructor(private readonly comunidadService: ComunidadService) {}
 

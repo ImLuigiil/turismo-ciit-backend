@@ -29,13 +29,10 @@ export class Capacitacion {
   @Column({ name: 'tema', length: 45, nullable: true })
   tema: string;
 
-  // Relación Many-to-One con Comunidad
   @ManyToOne(() => Comunidad, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn({ name: 'comunidad_id_comunidad', referencedColumnName: 'idComunidad' })
   comunidad: Comunidad;
 
-  // Relación Many-to-One con Comite (clave compuesta)
-  // Las propiedades en JoinColumn deben coincidir con las PrimaryColumn definidas arriba.
   @ManyToOne(() => Comite, { onDelete: 'NO ACTION', onUpdate: 'NO ACTION' })
   @JoinColumn([
     { name: 'comite_id_comite', referencedColumnName: 'idComite' },

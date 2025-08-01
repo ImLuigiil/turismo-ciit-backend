@@ -15,10 +15,9 @@ export class Comunidad {
   @Index({ unique: true })
   ubicacion: string;
 
-  // --- CORRECCIÓN AQUÍ: Añadir 'type: "int"' (o "integer") ---
-  @Column({ name: 'poblacion', type: 'int', nullable: true }) // O 'integer', 'numeric'
+  @Column({ name: 'poblacion', type: 'int', nullable: true }) 
   poblacion: number | null;
-  // --- FIN CORRECCIÓN ---
+
 
   @OneToMany(() => Proyecto, proyecto => proyecto.comunidad)
   proyectos: Proyecto[];

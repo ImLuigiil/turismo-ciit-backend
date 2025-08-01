@@ -4,7 +4,7 @@ import { IsNumber, IsString, IsOptional, IsNotEmpty, IsDateString } from 'class-
 export class CreateDiplomadoDto {
 
   @IsString()
-  @IsNotEmpty() // Asumimos que el nombre del diplomado sí es obligatorio
+  @IsNotEmpty()
   nombre: string;
 
   @IsString()

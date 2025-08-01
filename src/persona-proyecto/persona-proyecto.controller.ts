@@ -3,30 +3,30 @@ import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, 
 import { PersonaProyectoService } from './persona-proyecto.service';
 import { CreatePersonaProyectoDto } from './dto/create-persona-proyecto.dto';
 import { UpdatePersonaProyectoDto } from './dto/update-persona-proyecto.dto';
-import { AuthGuard } from '@nestjs/passport'; // Para proteger las rutas
+import { AuthGuard } from '@nestjs/passport';
 
-@Controller('personas-proyecto') // Endpoint: /personas-proyecto
+@Controller('personas-proyecto') 
 export class PersonaProyectoController {
   constructor(private readonly personaProyectoService: PersonaProyectoService) {}
 
-  @UseGuards(AuthGuard('jwt')) // Protege todas las operaciones de modificación
+  @UseGuards(AuthGuard('jwt'))
   @Post()
   @HttpCode(HttpStatus.CREATED)
   create(@Body() createPersonaProyectoDto: CreatePersonaProyectoDto) {
     return this.personaProyectoService.create(createPersonaProyectoDto);
   }
 
-  @Get() // Acceso público para listar todas las personas (si se requiere)
+  @Get() 
   findAll() {
     return this.personaProyectoService.findAll();
   }
 
-  @Get('by-project/:proyectoId') // Nuevo endpoint para obtener personas de un proyecto específico
+  @Get('by-project/:proyectoId')
   findByProjectId(@Param('proyectoId') proyectoId: string) {
     return this.personaProyectoService.findByProyectoId(+proyectoId);
   }
 
-  @Get(':id') // Acceso público para ver una persona por ID
+  @Get(':id') 
   findOne(@Param('id') id: string) {
     return this.personaProyectoService.findOne(+id);
   }

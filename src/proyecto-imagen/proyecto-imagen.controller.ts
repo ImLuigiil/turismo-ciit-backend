@@ -5,7 +5,7 @@ import { CreateProyectoImagenDto } from './dto/create-proyecto-imagen.dto';
 import { UpdateProyectoImagenDto } from './dto/update-proyecto-imagen.dto';
 import { AuthGuard } from '@nestjs/passport';
 
-@Controller('proyecto-imagenes') // Endpoint: /proyecto-imagenes
+@Controller('proyecto-imagenes')
 export class ProyectoImagenController {
   constructor(private readonly proyectoImagenService: ProyectoImagenService) {}
 
@@ -21,7 +21,7 @@ export class ProyectoImagenController {
     return this.proyectoImagenService.findAll();
   }
 
-  @Get('by-project/:proyectoId') // Endpoint para obtener imágenes por ID de proyecto
+  @Get('by-project/:proyectoId') 
   findByProjectId(@Param('proyectoId') proyectoId: string) {
     return this.proyectoImagenService.findByProyectoId(+proyectoId);
   }

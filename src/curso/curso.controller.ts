@@ -34,7 +34,7 @@ export class CursoController {
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
-      fileFilter: (req, file, cb) => { // Filtro para solo permitir PDFs
+      fileFilter: (req, file, cb) => {
         if (!file.originalname.match(/\.(pdf)$/)) {
           return cb(new BadRequestException('Solo se permiten archivos PDF para cursos de tipo "pdf"!'), false);
         }

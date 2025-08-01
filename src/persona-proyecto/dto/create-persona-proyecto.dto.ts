@@ -2,7 +2,6 @@
 import { IsString, IsNotEmpty, IsOptional, IsNumber } from 'class-validator';
 
 export class CreatePersonaProyectoDto {
-  // --- CAMBIO: Nuevas propiedades para el nombre ---
   @IsString()
   @IsNotEmpty()
   apellidoPaterno: string;
@@ -14,7 +13,6 @@ export class CreatePersonaProyectoDto {
   @IsString()
   @IsNotEmpty()
   nombre: string;
-  // --- FIN CAMBIO ---
 
   @IsString()
   @IsOptional()

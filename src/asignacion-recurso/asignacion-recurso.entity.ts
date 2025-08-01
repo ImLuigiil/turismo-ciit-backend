@@ -18,7 +18,7 @@ export class AsignacionRecurso {
   solicitudAsignada: number;
 
   @Column({ name: 'status', type: 'tinyint', nullable: true })
-  status: number; // O boolean si solo es 0 o 1
+  status: number;
 
   @Column({ name: 'tiempo_aprox', nullable: true })
   tiempoAprox: number;

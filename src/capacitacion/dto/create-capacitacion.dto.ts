@@ -19,7 +19,7 @@ export class CreateCapacitacionDto {
 
   @IsNumber()
   @IsNotEmpty()
-  comiteAsignacionRecursoIdAsg: number; // ¡Nueva propiedad para la FK!
+  comiteAsignacionRecursoIdAsg: number;
 
   @IsString()
   @IsOptional()

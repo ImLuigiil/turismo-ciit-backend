@@ -1,7 +1,7 @@
 // src/usuario/usuario.entity.ts
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { Rol } from '../rol/rol.entity';
-import * as bcrypt from 'bcryptjs'; // Importa bcryptjs
+import * as bcrypt from 'bcryptjs'; 
 
 @Entity('usuario')
 export class Usuario {
@@ -15,7 +15,7 @@ export class Usuario {
   nombre: string;
 
   @Column({ name: 'contraseña', length: 45, nullable: true })
-  contrasena: string; // La propiedad que almacena la contraseña hasheada
+  contrasena: string; 
 
   @Column({ name: 'correo', length: 45, nullable: true })
   correo: string;
@@ -27,13 +27,12 @@ export class Usuario {
   @JoinColumn({ name: 'rol_id_rol', referencedColumnName: 'idRol' })
   rol: Rol;
 
-  // --- Hooks para hashear la contraseña antes de guardar/actualizar ---
   @BeforeInsert()
   @BeforeUpdate()
   async hashPassword() {
-    if (this.contrasena) { // Solo hashear si la contraseña está presente
-      this.contrasena = await bcrypt.hash(this.contrasena, 10); // 10 es el costo del salt
+    if (this.contrasena) { 
+      this.contrasena = await bcrypt.hash(this.contrasena, 10); 
     }
   }
-  // --- Fin Hooks ---
+
 }

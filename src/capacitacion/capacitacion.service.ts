@@ -35,7 +35,7 @@ export class CapacitacionService {
         comunidadIdComunidad: comunidadId,
         comiteIdComite: comiteId,
         comiteReunionIdReunion: comiteReunionId,
-        comiteAsignacionRecursoIdAsg: comiteAsignacionId, // ¡Ahora esto es válido!
+        comiteAsignacionRecursoIdAsg: comiteAsignacionId,
       },
       relations: ['comunidad', 'comite'],
     });
@@ -70,7 +70,7 @@ export class CapacitacionService {
       comunidadIdComunidad: comunidadId,
       comiteIdComite: comiteId,
       comiteReunionIdReunion: comiteReunionId,
-      comiteAsignacionRecursoIdAsg: comiteAsignacionId, // ¡Ahora esto es válido!
+      comiteAsignacionRecursoIdAsg: comiteAsignacionId,
     });
     if (result.affected === 0) {
       throw new NotFoundException(`Capacitación no encontrada con los IDs proporcionados.`);

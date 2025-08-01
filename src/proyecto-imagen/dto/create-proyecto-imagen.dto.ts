@@ -4,7 +4,7 @@ import { IsString, IsNumber, IsOptional, IsNotEmpty } from 'class-validator';
 export class CreateProyectoImagenDto {
   @IsString()
   @IsNotEmpty()
-  url: string; // La URL de la imagen (generada por el backend)
+  url: string; 
 
   @IsNumber()
   @IsOptional()
@@ -16,5 +16,5 @@ export class CreateProyectoImagenDto {
 
   @IsNumber()
   @IsNotEmpty()
-  proyectoIdProyecto: number; // El ID del proyecto al que pertenece
+  proyectoIdProyecto: number; 
 }

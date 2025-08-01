@@ -30,7 +30,6 @@ export class PersonaProyectoService {
     return persona;
   }
 
-  // Encontrar personas por ID de proyecto
   async findByProyectoId(proyectoId: number): Promise<PersonaProyecto[]> {
     return this.personasProyectoRepository.find({ where: { proyectoIdProyecto: proyectoId } });
   }

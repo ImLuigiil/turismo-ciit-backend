@@ -7,24 +7,23 @@ export class PersonaProyecto {
   @PrimaryGeneratedColumn({ name: 'id_persona_proyecto' })
   idPersonaProyecto: number;
 
-  @Column({ name: 'apellido_paterno', length: 50, nullable: false, type: 'varchar' }) // Asegúrate de que este también tenga type
+  @Column({ name: 'apellido_paterno', length: 50, nullable: false, type: 'varchar' }) 
   apellidoPaterno: string;
 
-  // --- CORRECCIÓN CLAVE AQUÍ: Añadir 'type: "varchar"' ---
-  @Column({ name: 'apellido_materno', length: 50, nullable: true, type: 'varchar' }) // ¡Añadido type: 'varchar'!
-  apellidoMaterno: string | null;
-  // --- FIN CORRECCIÓN ---
 
-  @Column({ name: 'nombre', length: 50, nullable: false, type: 'varchar' }) // Asegúrate de que este también tenga type
+  @Column({ name: 'apellido_materno', length: 50, nullable: true, type: 'varchar' }) 
+  apellidoMaterno: string | null;
+
+
+  @Column({ name: 'nombre', length: 50, nullable: false, type: 'varchar' })
   nombre: string;
 
-  // --- REVISIÓN ADICIONAL: Asegúrate de que estos también tengan 'type' si son nullable ---
-  @Column({ name: 'rol_en_proyecto', length: 45, nullable: true, type: 'varchar' }) // ¡Añadido type: 'varchar'!
+
+  @Column({ name: 'rol_en_proyecto', length: 45, nullable: true, type: 'varchar' }) 
   rolEnProyecto: string | null;
 
-  @Column({ name: 'contacto', length: 100, nullable: true, type: 'varchar' }) // ¡Añadido type: 'varchar'!
+  @Column({ name: 'contacto', length: 100, nullable: true, type: 'varchar' }) 
   contacto: string | null;
-  // --- FIN REVISIÓN ADICIONAL ---
 
   @Column({ name: 'proyecto_id_proyecto' })
   proyectoIdProyecto: number;

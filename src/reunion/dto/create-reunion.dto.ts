@@ -6,7 +6,7 @@ export class CreateReunionDto {
   idReunion: number;
 
   @IsDateString()
-  @IsOptional() // Según tu SQL, es NULL, pero es UNIQUE.
+  @IsOptional() 
   fecha?: Date;
 
   @IsNumber()
@@ -21,8 +21,7 @@ export class CreateReunionDto {
   @IsOptional()
   tema?: string;
 
-  @IsNumber() // Usa IsNumber para TINYINT si representa un número entero
+  @IsNumber()
   @IsOptional()
-  // O si es 0/1 y quieres que sea boolean: @IsBoolean() @Transform(({ value }) => !!parseInt(value))
   status?: number;
 }
