@@ -155,9 +155,6 @@ export class ProyectoController {
 
     doc.pipe(res); 
 
-    doc.image('https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png', 50, 50, { width: 100 });
-    doc.image('https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png', doc.page.width - 150, 50, { width: 100 });
-
     doc.fontSize(20).text(`${project.nombre}`, { align: 'center' });
     doc.moveDown(2); 
 
