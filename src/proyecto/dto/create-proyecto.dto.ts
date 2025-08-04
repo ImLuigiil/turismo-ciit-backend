@@ -45,7 +45,6 @@ export class CreateProyectoDto {
   @IsNumber()
   @IsOptional()
   @Min(0, { message: 'La población beneficiada no puede ser negativa.' })
-  @Max(999999999, { message: 'La población beneficiada no puede exceder las 9 cifras.' })
   @Type(() => Number)
   poblacionBeneficiada?: number | null;
 
