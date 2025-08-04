@@ -1,16 +1,15 @@
 // src/proyecto/proyecto.controller.ts
-import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFiles, UseInterceptors,NotFoundException, BadRequestException, Res } from '@nestjs/common';
 import { ProyectoService } from './proyecto.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
 import { UpdateProyectoDto } from './dto/update-proyecto.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path';
+import { extname } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
 import * as PDFDocument from 'pdfkit';
-import { Response } from 'express';
-import * as fs from 'fs'; // Importa el módulo 'fs' de Node.js para leer archivos
+import { Response } from 'express'; 
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -30,7 +29,7 @@ export class ProyectoController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   @UseInterceptors(
-    FilesInterceptor('images', 15, {
+    FilesInterceptor('images', 15, { 
       storage: diskStorage({
         destination: './uploads/proyectos',
         filename: (req, file, cb) => {
@@ -38,7 +37,7 @@ export class ProyectoController {
           cb(null, `${randomName}${extname(file.originalname)}`);
         },
       }),
-      fileFilter: (req, file, cb) => {
+      fileFilter: (req, file, cb) => { 
         if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
           return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
         }
@@ -51,7 +50,7 @@ export class ProyectoController {
   )
   async create(
     @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: any,
+    @Body() body: any, 
   ) {
     const createProyectoDto: CreateProyectoDto = {
       nombre: body.nombre,
@@ -136,14 +135,17 @@ export class ProyectoController {
     return this.proyectoService.remove(+id);
   }
 
-  // --- NUEVO ENDPOINT: Generar Reporte PDF con formato mejorado ---
   @Get(':id/report')
-  @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt')) 
   async generateReport(
     @Param('id') id: string,
-    @Res() res: Response
+    @Res() res: Response 
   ) {
     const project = await this.proyectoService.getProjectReportData(+id);
+
+    if (!project) {
+      throw new NotFoundException(`Proyecto con ID ${id} no encontrado para generar reporte.`);
+    }
 
     const doc = new PDFDocument();
     const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
@@ -151,79 +153,64 @@ export class ProyectoController {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    doc.pipe(res);
+    doc.pipe(res); 
 
-    // --- Contenido del PDF con formato mejorado ---
-    // Logos en la parte superior
-    doc.image('https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png', 50, 50, { width: 100 });
-    doc.image('https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png', doc.page.width - 150, 50, { width: 100 });
+    doc.fontSize(20).text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
+    doc.moveDown(2); 
 
-    // Título del reporte
-    doc.moveDown(4); // Espacio para los logos
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
-    doc.moveDown(1);
+    doc.fontSize(14).text('Información General:', { underline: true });
+    doc.moveDown(1); 
 
-    // Información General
-    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
-    doc.moveDown(1);
+    doc.fontSize(12); 
 
-    doc.fontSize(12).font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
+    doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
        .font('Helvetica').text(`${project.idProyecto}`);
-    doc.moveDown(1); // Espacio de 1 mínimo
+    doc.moveDown(0.5); 
 
     doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
-    doc.moveDown(1);
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
        .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
-    doc.moveDown(1);
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
-       .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-    doc.moveDown(1);
+       .font('Helvetica').text(`${project.poblacionBeneficiada || 'N/A'}`);
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
        .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
-    doc.moveDown(1);
-
-    // Función de formato de fecha DD/MM/YYYY
-    const formatDate = (date) => {
-        if (!date) return 'N/A';
-        const d = new Date(date);
-        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-    };
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
-       .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
-    doc.moveDown(1);
+       .font('Helvetica').text(`${project.fechaInicio ? new Date(project.fechaInicio).toLocaleDateString() : 'N/A'}`);
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
-       .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
-    doc.moveDown(1);
+       .font('Helvetica').text(`${project.fechaFinAprox ? new Date(project.fechaFinAprox).toLocaleDateString() : 'N/A'}`);
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Fase Actual: ', { continued: true })
        .font('Helvetica').text(`${project.faseActual || 'N/A'}`);
-    doc.moveDown(1);
+    doc.moveDown(0.5);
 
     doc.font('Helvetica-Bold').text('Cambios de Nombre: ', { continued: true })
        .font('Helvetica').text(`${project.nombreCambiosCount || 0}`);
-    doc.moveDown(2);
+    doc.moveDown(1);
 
-    // Justificación de Fase (solo si existe)
     if (project.justificacionFase) {
-      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
+      doc.fontSize(14).text('Justificación de Último Cambio de Fase:', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12).text(project.justificacionFase);
       doc.moveDown(1);
-      doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
-      doc.moveDown(2);
     }
 
-    // Personas Involucradas
-    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
-    doc.moveDown(1);
+    doc.fontSize(14).text('Personas Involucradas:', { underline: true });
+    doc.moveDown(0.5);
     if (project.personasDirectorio && project.personasDirectorio.length > 0) {
       project.personasDirectorio.forEach(persona => {
-        doc.fontSize(12);
+        doc.fontSize(12); 
         doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
         doc.moveDown(0.2);
@@ -238,41 +225,24 @@ export class ProyectoController {
              .font('Helvetica').text(`${persona.contacto}`);
           doc.moveDown(0.2);
         }
-        doc.moveDown(1); // Espacio entre personas
+        doc.moveDown(0.5);
       });
     } else {
-      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
-      doc.moveDown(1);
+      doc.fontSize(12).text('No hay personas involucradas registradas.');
     }
+    doc.moveDown();
 
-    // Imágenes (incrustadas)
+    doc.fontSize(14).text('Imágenes del Proyecto:', { underline: true });
+    doc.moveDown(0.5);
     if (project.imagenes && project.imagenes.length > 0) {
-      doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
-      doc.moveDown(1);
-
-      const imagePathBase = join(__dirname, '..', 'uploads');
-      
-      project.imagenes.forEach((img, index) => {
-        const fullImagePath = join(imagePathBase, img.url);
-        
-        if (fs.existsSync(fullImagePath)) {
-          doc.image(fullImagePath, {
-            fit: [500, 300],
-            align: 'center',
-            valign: 'center'
-          });
-          doc.moveDown(1);
-        } else {
-          doc.fontSize(12).font('Helvetica').text(`Imagen ${index + 1}: Archivo no encontrado en el servidor.`);
-          doc.moveDown(1);
-        }
-      });
+        project.imagenes.forEach((img, index) => {
+            doc.fontSize(10).text(`Imagen ${index + 1}: ${res.req.protocol}://${res.req.get('host')}${img.url}`);
+        });
     } else {
-      doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
-      doc.moveDown(1);
-      doc.fontSize(12).font('Helvetica').text('No hay imágenes asociadas a este proyecto.');
-      doc.moveDown(1);
+        doc.fontSize(12).text('No hay imágenes asociadas a este proyecto.');
     }
+    doc.moveDown();
+
     doc.end();
   }
 }
