@@ -19,7 +19,7 @@ export class CreateProyectoDto {
   @IsNumber()
   @IsOptional()
   @Min(1, { message: 'El número de capítulos no puede ser menor a 1.' })
-  @Max(3, { message: 'El número de capítulos no puede ser mayor a 3.' })
+  @Max(5, { message: 'El número de capítulos no puede ser mayor a 3.' })
   @Type(() => Number)
   noCapitulos?: number | null;
 
