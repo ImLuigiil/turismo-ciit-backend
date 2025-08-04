@@ -10,6 +10,7 @@ import { extname } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
 import * as PDFDocument from 'pdfkit';
 import { Response } from 'express'; 
+import axios from 'axios';
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -155,10 +156,25 @@ export class ProyectoController {
 
     doc.pipe(res); 
 
-    doc.image('https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png', 50, 50, { width: 100 });
-    doc.image('https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png', doc.page.width - 150, 50, { width: 100 });
+    const tecNMUrl = 'https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png';
+    const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
+
+    try {
+      const [tecNMResponse, itoResponse] = await Promise.all([
+        axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
+        axios.get(itoUrl, { responseType: 'arraybuffer' })
+      ]);
+      const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
+      const itoImageBuffer = Buffer.from(itoResponse.data);
+
+      doc.image(tecNMImageBuffer, 50, 50, { width: 100 });
+      doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
+    } catch (error) {
+      console.error('Error al descargar los logos:', error.message);
+      doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
+    }
     doc.moveDown(4);
-    
+
     doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
     doc.moveDown(1);
 
