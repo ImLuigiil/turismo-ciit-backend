@@ -167,7 +167,7 @@ export class ProyectoController {
       const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
       const itoImageBuffer = Buffer.from(itoResponse.data);
 
-      doc.image(tecNMImageBuffer, 50, 50, { width: 100 });
+      doc.image(tecNMImageBuffer, 75, 75, { width: 100 });
       doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
     } catch (error) {
       console.error('Error al descargar los logos:', error.message);
