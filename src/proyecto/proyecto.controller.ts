@@ -155,62 +155,70 @@ export class ProyectoController {
 
     doc.pipe(res); 
 
-    doc.fontSize(17).text(`${project.nombre}`, { align: 'center' });
-    doc.moveDown(2); 
-
-    doc.fontSize(14).text('Información General:',  { continued: true });
-    doc.moveDown(1); 
-
-    doc.fontSize(12); 
-
-    doc.font('Helvetica-Bold').text('ID del Proyecto: ')
-       .font('Helvetica').text(`${project.idProyecto}`);
-    doc.moveDown(0.5); 
-
-    doc.font('Helvetica-Bold').text('Descripción: ')
-       .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Comunidad: ')
-       .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Población Beneficiada: ')
-       .font('Helvetica').text(`${project.poblacionBeneficiada || 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Número de Capítulos: ')
-       .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Fecha de Inicio: ')
-       .font('Helvetica').text(`${project.fechaInicio ? new Date(project.fechaInicio).toLocaleDateString() : 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ')
-       .font('Helvetica').text(`${project.fechaFinAprox ? new Date(project.fechaFinAprox).toLocaleDateString() : 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Fase Actual: ')
-       .font('Helvetica').text(`${project.faseActual || 'N/A'}`);
-    doc.moveDown(0.5);
-
-    doc.font('Helvetica-Bold').text('Cambios de Nombre: ')
-       .font('Helvetica').text(`${project.nombreCambiosCount || 0}`);
+       doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
     doc.moveDown(1);
 
+    // Información General
+    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
+    doc.moveDown(1);
+
+    doc.fontSize(12).font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
+       .font('Helvetica').text(`${project.idProyecto}`);
+    doc.moveDown(1); // Espacio de 1 mínimo
+
+    doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
+       .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+       .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+       .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
+       .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
+    doc.moveDown(1);
+
+    // Función de formato de fecha DD/MM/YYYY
+    const formatDate = (date) => {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    };
+
+    doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
+       .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
+       .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('Fase Actual: ', { continued: true })
+       .font('Helvetica').text(`${project.faseActual || 'N/A'}`);
+    doc.moveDown(1);
+
+    doc.font('Helvetica-Bold').text('Cambios de Nombre: ', { continued: true })
+       .font('Helvetica').text(`${project.nombreCambiosCount || 0}`);
+    doc.moveDown(2);
+
+    // Justificación de Fase (solo si existe)
     if (project.justificacionFase) {
-      doc.fontSize(14).text('Justificación de Último Cambio de Fase:', { continued: true });
-      doc.moveDown(0.5);
-      doc.fontSize(12).text(project.justificacionFase);
+      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
       doc.moveDown(1);
+      doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
+      doc.moveDown(2);
     }
 
-    doc.fontSize(14).text('Personas Involucradas:', { continued: true });
-    doc.moveDown(0.5);
+    // Personas Involucradas
+    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
+    doc.moveDown(1);
     if (project.personasDirectorio && project.personasDirectorio.length > 0) {
       project.personasDirectorio.forEach(persona => {
-        doc.fontSize(12); 
+        doc.fontSize(12);
         doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
         doc.moveDown(0.2);
@@ -225,13 +233,13 @@ export class ProyectoController {
              .font('Helvetica').text(`${persona.contacto}`);
           doc.moveDown(0.2);
         }
-        doc.moveDown(0.5);
+        doc.moveDown(1); // Espacio entre personas
       });
     } else {
-      doc.fontSize(12).text('No hay personas involucradas registradas.');
+      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
+      doc.moveDown(1);
     }
-    doc.moveDown();
-    
+
     doc.end();
   }
 }
