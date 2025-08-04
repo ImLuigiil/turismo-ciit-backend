@@ -167,13 +167,13 @@ export class ProyectoController {
       const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
       const itoImageBuffer = Buffer.from(itoResponse.data);
 
-      doc.image(tecNMImageBuffer, 75, 75, { width: 150 });
+      doc.image(tecNMImageBuffer, 75, 75, { width: 175 });
       doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
     } catch (error) {
       console.error('Error al descargar los logos:', error.message);
       doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
     }
-    doc.moveDown(5);
+    doc.moveDown(6);
 
     doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
     doc.moveDown(1);
@@ -182,23 +182,23 @@ export class ProyectoController {
     doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
     doc.moveDown(1);
 
-    doc.fontSize(12).font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
+    doc.fontSize(12).font('Helvetica').text('ID del Proyecto: ', { continued: true })
        .font('Helvetica').text(`${project.idProyecto}`);
     doc.moveDown(1); // Espacio de 1 mínimo
 
-    doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
+    doc.font('Helvetica').text('Descripción: ', { continued: true })
        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+    doc.font('Helvetica').text('Comunidad: ', { continued: true })
        .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+    doc.font('Helvetica').text('Población Beneficiada: ', { continued: true })
        .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
+    doc.font('Helvetica').text('Número de Capítulos: ', { continued: true })
        .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
     doc.moveDown(1);
 
@@ -209,20 +209,16 @@ export class ProyectoController {
         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     };
 
-    doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
+    doc.font('Helvetica').text('Fecha de Inicio: ', { continued: true })
        .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
+    doc.font('Helvetica').text('Fecha Fin Aprox: ', { continued: true })
        .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Fase Actual: ', { continued: true })
+    doc.font('Helvetica').text('Fase Actual: ', { continued: true })
        .font('Helvetica').text(`${project.faseActual || 'N/A'}`);
-    doc.moveDown(1);
-
-    doc.font('Helvetica-Bold').text('Cambios de Nombre: ', { continued: true })
-       .font('Helvetica').text(`${project.nombreCambiosCount || 0}`);
     doc.moveDown(2);
 
     // Justificación de Fase (solo si existe)
@@ -239,17 +235,17 @@ export class ProyectoController {
     if (project.personasDirectorio && project.personasDirectorio.length > 0) {
       project.personasDirectorio.forEach(persona => {
         doc.fontSize(12);
-        doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
+        doc.font('Helvetica').text('Nombre: ', { continued: true })
            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
         doc.moveDown(0.2);
 
         if (persona.rolEnProyecto) {
-          doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
+          doc.font('Helvetica').text('Rol: ', { continued: true })
              .font('Helvetica').text(`${persona.rolEnProyecto}`);
           doc.moveDown(0.2);
         }
         if (persona.contacto) {
-          doc.font('Helvetica-Bold').text('Contacto: ', { continued: true })
+          doc.font('Helvetica').text('Contacto: ', { continued: true })
              .font('Helvetica').text(`${persona.contacto}`);
           doc.moveDown(0.2);
         }
