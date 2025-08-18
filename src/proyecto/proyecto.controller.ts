@@ -13,6 +13,7 @@ import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
 
+
 @Controller('proyectos')
 export class ProyectoController {
   constructor(private readonly proyectoService: ProyectoService) {}
@@ -135,6 +136,46 @@ export class ProyectoController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.proyectoService.remove(+id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id/concluir-fase') // Define el método PATCH y la ruta específica
+  @UseInterceptors(
+    FileInterceptor('documento', { // 'documento' es el nombre del campo para el archivo PDF
+      storage: diskStorage({
+        destination: './uploads/documentos_justificacion', // Carpeta para documentos de justificación
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => { // Solo permitir PDFs
+        if (!file.originalname.match(/\.(pdf)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos PDF como documento de justificación!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 10 // Límite de 10MB para el documento
+      }
+    })
+  )
+  async concluirFase(
+    @Param('id') id: string,
+    @UploadedFile() documento: Express.Multer.File, // El archivo PDF subido
+    @Body('justificacion') justificacion: string, // El texto de justificación del body
+  ) {
+    if (!justificacion || justificacion.trim() === '') {
+      throw new BadRequestException('La justificación es obligatoria para avanzar de fase.');
+    }
+    if (!documento) {
+      throw new BadRequestException('Se requiere un documento PDF que avale el cambio de fase.');
+    }
+
+    const documentoUrl = `/uploads/documentos_justificacion/${documento.filename}`;
+    
+    // Llama al servicio para avanzar la fase y guardar la justificación/documento
+    return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
   }
 
   @Get(':id/report')
