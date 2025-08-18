@@ -1,5 +1,5 @@
 // src/proyecto/proyecto.service.ts
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Proyecto } from './proyecto.entity';
@@ -9,6 +9,7 @@ import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
 
 @Injectable()
 export class ProyectoService {
+  private readonly logger = new Logger(ProyectoService.name);
   private readonly MAX_NAME_CHANGES = 3;
 
   constructor(
@@ -117,29 +118,35 @@ export class ProyectoService {
   }
 
   // --- NUEVO MÉTODO: Concluir Fase ---
-  async concluirFase(
+async concluirFase(
     id: number,
     justificacion: string,
     documentoUrl: string | null
   ): Promise<Proyecto> {
     const project = await this.proyectosRepository.findOne({ where: { idProyecto: id } });
 
+    this.logger.log(`ConcluirFase: Intentando avanzar proyecto ID ${id}. Fase actual leída: ${project?.faseActual}`);
+
     if (!project) {
       throw new NotFoundException(`Proyecto con ID ${id} no encontrado.`);
     }
 
-    if (project.faseActual = 7) {
+    // --- CORRECCIÓN CLAVE AQUÍ ---
+    // Asegurarse de que faseActual sea un número, si es null o undefined, se trata como 0 para la comparación.
+    const currentFase = project.faseActual ?? 0; 
+
+    if (currentFase >= 7) {
+      this.logger.warn(`ConcluirFase: Intento de avanzar proyecto ID ${id} fallido. Ya en fase ${currentFase}.`);
       throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7) o superior.');
     }
+    // --- FIN CORRECCIÓN ---
 
-    // Incrementar la fase actual
-    project.faseActual += 1;
-    // Guardar la justificación y la URL del documento
+    project.faseActual = currentFase + 1; // Incrementa la fase desde el valor seguro
     project.justificacionFase = justificacion;
     project.justificacionDocumentoUrl = documentoUrl;
 
-    // Guardar los cambios en la base de datos
-    return this.proyectosRepository.save(project);
+    const savedProject = await this.proyectosRepository.save(project);
+    this.logger.log(`ConcluirFase: Proyecto ID ${id} avanzado a fase ${savedProject.faseActual}.`);
+    return savedProject;
   }
-  // --- FIN NUEVO MÉTODO ---
 }
