@@ -52,4 +52,8 @@ export class CreateProyectoDto {
   @IsOptional()
   justificacionFase?: string | null;
 
+  @IsString()
+  @IsOptional()
+  justificacionDocumentoUrl?: string | null;
+
 }

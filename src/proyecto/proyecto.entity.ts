@@ -39,6 +39,8 @@ export class Proyecto {
   @Column({ name: 'justificacion_fase', type: 'text', nullable: true })
   justificacionFase: string | null;
 
+  @Column({ name: 'justificacion_documento_url', length: 255, nullable: true, type: 'varchar' })
+  justificacionDocumentoUrl: string | null;
 
   @OneToMany(() => ProyectoImagen, imagen => imagen.proyecto, { cascade: true })
   imagenes: ProyectoImagen[];

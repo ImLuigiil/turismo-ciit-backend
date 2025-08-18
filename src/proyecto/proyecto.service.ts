@@ -115,4 +115,31 @@ export class ProyectoService {
     const project = await this.findOne(id);
     return project;
   }
+
+  // --- NUEVO MÉTODO: Concluir Fase ---
+  async concluirFase(
+    id: number,
+    justificacion: string,
+    documentoUrl: string | null
+  ): Promise<Proyecto> {
+    const project = await this.proyectosRepository.findOne({ where: { idProyecto: id } });
+
+    if (!project) {
+      throw new NotFoundException(`Proyecto con ID ${id} no encontrado.`);
+    }
+
+    if (project.faseActual = 7) {
+      throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7) o superior.');
+    }
+
+    // Incrementar la fase actual
+    project.faseActual += 1;
+    // Guardar la justificación y la URL del documento
+    project.justificacionFase = justificacion;
+    project.justificacionDocumentoUrl = documentoUrl;
+
+    // Guardar los cambios en la base de datos
+    return this.proyectosRepository.save(project);
+  }
+  // --- FIN NUEVO MÉTODO ---
 }
