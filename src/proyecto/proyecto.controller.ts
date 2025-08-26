@@ -1,5 +1,5 @@
 // src/proyecto/proyecto.controller.ts
-import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, NotFoundException,UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus,NotFoundException, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile } from '@nestjs/common';
 import { ProyectoService } from './proyecto.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
 import { UpdateProyectoDto } from './dto/update-proyecto.dto';
