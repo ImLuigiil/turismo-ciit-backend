@@ -1,10 +1,10 @@
 // src/proyecto/proyecto.controller.ts
-import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus,NotFoundException, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile, NotFoundException } from '@nestjs/common'; // Importa Patch y UploadedFile
 import { ProyectoService } from './proyecto.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
 import { UpdateProyectoDto } from './dto/update-proyecto.dto';
 import { AuthGuard } from '@nestjs/passport';
-import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
+import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express'; // Importa FileInterceptor
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
@@ -12,7 +12,7 @@ import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
-import { Proyecto } from './proyecto.entity'; // Importa la entidad Proyecto
+
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -136,6 +136,46 @@ export class ProyectoController {
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.proyectoService.remove(+id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id/concluir-fase') // Define el método PATCH y la ruta específica
+  @UseInterceptors(
+    FileInterceptor('documento', { // 'documento' es el nombre del campo para el archivo PDF
+      storage: diskStorage({
+        destination: './uploads/documentos_justificacion', // Carpeta para documentos de justificación
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => { // Solo permitir PDFs
+        if (!file.originalname.match(/\.(pdf)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos PDF como documento de justificación!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 10 // Límite de 10MB para el documento
+      }
+    })
+  )
+  async concluirFase(
+    @Param('id') id: string,
+    @UploadedFile() documento: Express.Multer.File, // El archivo PDF subido
+    @Body('justificacion') justificacion: string, // El texto de justificación del body
+  ) {
+    if (!justificacion || justificacion.trim() === '') {
+      throw new BadRequestException('La justificación es obligatoria para avanzar de fase.');
+    }
+    if (!documento) {
+      throw new BadRequestException('Se requiere un documento PDF que avale el cambio de fase.');
+    }
+
+    const documentoUrl = `/uploads/documentos_justificacion/${documento.filename}`;
+    
+    // Llama al servicio para avanzar la fase y guardar la justificación/documento
+    return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
   }
 
   @Get(':id/report')
@@ -265,10 +305,10 @@ export class ProyectoController {
       doc.moveDown(1);
 
       const imagePathBase = join(__dirname, '..', 'uploads');
-      
+
       project.imagenes.forEach((img, index) => {
         const fullImagePath = join(imagePathBase, img.url);
-        
+
         if (fs.existsSync(fullImagePath)) {
           doc.image(fullImagePath, {
             fit: [500, 300],
