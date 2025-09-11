@@ -12,6 +12,7 @@ import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
+import { Proyecto } from './proyecto.entity';
 
 
 @Controller('proyectos')
@@ -177,6 +178,162 @@ export class ProyectoController {
     // Llama al servicio para avanzar la fase y guardar la justificación/documento
     return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
   }
+
+  // --- AÑADIR ESTE BLOQUE DE CÓDIGO ---
+  @Get('report/general')
+  @UseGuards(AuthGuard('jwt'))
+  async generateGeneralReport(@Res() res: Response) {
+    const proyectos = await this.proyectoService.findAll();
+
+    const doc = new PDFDocument();
+    const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    doc.pipe(res);
+
+    const tecNMUrl = 'https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png';
+    const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
+
+    try {
+      const [tecNMResponse, itoResponse] = await Promise.all([
+        axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
+        axios.get(itoUrl, { responseType: 'arraybuffer' })
+      ]);
+      const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
+      const itoImageBuffer = Buffer.from(itoResponse.data);
+
+      doc.image(tecNMImageBuffer, 50, 50, { width: 100 });
+      doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
+    } catch (error) {
+      console.error('Error al descargar los logos:', error.message);
+      doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
+    }
+
+    doc.moveDown(4);
+    doc.fontSize(16).font('Helvetica-Bold').text('Reporte General de Avance de Proyectos', { align: 'center' });
+    doc.moveDown(2);
+    
+    // Función para definir el porcentaje objetivo por fase
+const getPhaseTargetPercentage = (faseActual: number) => {
+    if (faseActual < 1) return 0;
+    if (faseActual >= 7) return 100;
+    
+    if (faseActual <= 3) {
+      return faseActual * 25;
+    } else {
+      const percentagePerSubPhase = 25 / 4;
+      return 75 + (faseActual - 3) * percentagePerSubPhase;
+    }
+};
+
+// Función para calcular el progreso basado en el tiempo
+const calculateTimeBasedProgress = (fechaInicio: Date, fechaFinAprox: Date) => {
+    // Manejar fechas nulas o inválidas
+    if (!fechaInicio || !fechaFinAprox) return 0;
+
+    const startDate = new Date(fechaInicio);
+    const endDate = new Date(fechaFinAprox);
+    const currentDate = new Date();
+
+    if (currentDate < startDate) {
+      return 0;
+    }
+    
+    const totalDuration = endDate.getTime() - startDate.getTime();
+    const elapsedDuration = currentDate.getTime() - startDate.getTime();
+
+    if (totalDuration <= 0) {
+      return 100;
+    }
+    
+    return (elapsedDuration / totalDuration) * 100;
+};
+
+// Función para calcular el avance final, limitado por la fase
+const calcularAvance = (proyecto: any) => {
+    const { fechaInicio, fechaFinAprox, faseActual } = proyecto;
+    if (faseActual >= 7) return 100;
+
+    const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
+    const phaseTargetPercentage = getPhaseTargetPercentage(faseActual);
+    const finalPercentage = Math.min(timeBasedPercentage, phaseTargetPercentage);
+    
+    return Math.min(100, Math.max(0, Math.round(finalPercentage)));
+};
+
+// Función para determinar el color de la barra
+const getProgressColor = (proyecto: any) => {
+    const { fechaInicio, fechaFinAprox, faseActual } = proyecto;
+    
+    // Si la fase es 7 o superior, siempre es verde
+    if (faseActual >= 7) return '#28a745'; 
+
+    // Manejar fechas nulas o inválidas
+    if (!fechaInicio || !fechaFinAprox) return '#6c757d'; 
+
+    const startDate = new Date(fechaInicio);
+    const endDate = new Date(fechaFinAprox);
+    const currentDate = new Date();
+
+    // Si la fecha de fin ya pasó y no está en fase 7, es rojo
+    if (currentDate > endDate) {
+        return '#dc3545';
+    }
+
+    const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
+    const phaseTargetPercentage = getPhaseTargetPercentage(faseActual);
+    
+    // Calcular días de atraso
+    const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    const percentageDifference = phaseTargetPercentage - timeBasedPercentage;
+    const daysBehind = (percentageDifference / 100) * totalDays;
+    
+    const YELLOW_DAYS_THRESHOLD = 4;
+    
+    if (daysBehind >= 5) {
+      return '#dc3545'; // Rojo si está muy atrasado (>= 5 días)
+    } else if (daysBehind > 0 && daysBehind <= YELLOW_DAYS_THRESHOLD) {
+      return '#ffc107'; // Amarillo si está levemente atrasado (1-4 días)
+    } else {
+      return '#28a745'; // Verde si está en tiempo o adelantado
+    }
+};
+    
+    if (proyectos.length === 0) {
+      doc.fontSize(12).text('No hay proyectos registrados en el sistema.', { align: 'center' });
+    } else {
+      proyectos.forEach((proyecto, index) => {
+        const avance = calcularAvance(proyecto);
+        const color = getProgressColor(proyecto);
+        const yPos = doc.y;
+
+        doc.fontSize(12).font('Helvetica-Bold').text(`${index + 1}. ${proyecto.nombre}`);
+        doc.moveDown(0.5);
+        
+        doc.fontSize(10);
+        doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
+        
+        // Dibuja la barra de progreso
+        const progressBarWidth = 200;
+        const progressBarHeight = 10;
+        const progressX = doc.page.width - 250;
+        const progressY = yPos + 18;
+
+        doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
+           .stroke('#e0e0e0');
+
+        doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
+           .fill(color);
+        
+        doc.moveDown(2);
+      });
+    }
+
+    doc.end();
+  }
+  // --- FIN DEL BLOQUE DE CÓDIGO AÑADIDO ---
 
   @Get(':id/report')
   @UseGuards(AuthGuard('jwt'))
