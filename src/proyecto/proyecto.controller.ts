@@ -277,21 +277,21 @@ export class ProyectoController {
         const avance = calcularAvance(proyecto);
         const color = getProgressColor(proyecto);
         
-        const formatDate = (date: Date) => {
-          if (!date) return 'N/A';
-          const d = new Date(date);
-          return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-        };
 
         const yPos = doc.y;
 
         doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
-        
+                
+        doc.moveDown(1.0);
+
         const progressBarWidth = 200;
         const progressBarHeight = 10;
         const progressX = doc.page.width - 250;
         const progressY = yPos + 2;
 
+                
+        doc.moveDown(0.5);
+        
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
 
