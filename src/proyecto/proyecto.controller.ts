@@ -287,11 +287,11 @@ export class ProyectoController {
         const progressBarWidth = 200;
         const progressBarHeight = 10;
         const progressX = doc.page.width - 250;
-        const progressY = yPos + 2;
+        const progressY = yPos + 10;
 
                 
         doc.moveDown(0.5);
-        
+
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
 
