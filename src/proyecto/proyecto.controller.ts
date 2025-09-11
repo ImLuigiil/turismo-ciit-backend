@@ -309,6 +309,7 @@ const avance = calcularAvance(proyecto);
         const yPos = doc.y;
 
         doc.fontSize(12).font('Helvetica-Bold').text(`${index + 1}. ${proyecto.nombre}`);
+        doc.moveDown(1.0);
         
         // Dibuja la barra de progreso
         const progressBarWidth = 200;
@@ -316,8 +317,8 @@ const avance = calcularAvance(proyecto);
         const progressX = doc.page.width - 250;
         const progressY = yPos + 2;
         
-        doc.moveDown(0.5);
         
+
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
 
