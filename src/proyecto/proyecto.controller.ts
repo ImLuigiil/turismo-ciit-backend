@@ -282,23 +282,22 @@ export class ProyectoController {
 
         doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
                 
-        doc.moveDown(1.0);
 
         const progressBarWidth = 200;
         const progressBarHeight = 10;
         const progressX = doc.page.width - 250;
-        const progressY = yPos + 10;
+        const progressY = yPos + 18;
 
                 
-        doc.moveDown(0.5);
-
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
 
         doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
            .fill(color);
         
-        doc.moveDown(0.5);
+        doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
+        doc.moveDown(0.2);
         
         doc.fontSize(10).fillColor('#000000');
         doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
@@ -307,10 +306,6 @@ export class ProyectoController {
            
         doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
            .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-        doc.moveDown(0.2);
-
-        doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
         doc.moveDown(0.2);
         
         
