@@ -316,7 +316,8 @@ const avance = calcularAvance(proyecto);
         const progressX = doc.page.width - 250;
         const progressY = yPos + 2;
         
-
+        doc.moveDown(0.5);
+        
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
 
