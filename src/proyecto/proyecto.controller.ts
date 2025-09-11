@@ -314,6 +314,15 @@ const getProgressColor = (proyecto: any) => {
         doc.fontSize(10);
         doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
            .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
+
+        doc.fontSize(10).font('Helvetica-Bold').text(`Poblacion Beneficiada:`,{ continued: true })
+            .font('Helvetica').text(`${proyecto.poblacionBeneficiada}`);
+        
+        doc.fontSize(10).font('Helvetica-Bold').text(`Municipio:`,{ continued: true })
+            .font('Helvetica').text(`${proyecto.comunidad}`);
+
+        doc.fontSize(10).font('Helvetica-Bold').text(`Fecha Final:`,{ continued: true })
+            .font('Helvetica').text(`${proyecto.fechaFinAprox}`);
         
         // Dibuja la barra de progreso
         const progressBarWidth = 200;
