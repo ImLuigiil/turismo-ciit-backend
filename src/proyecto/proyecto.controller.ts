@@ -304,31 +304,18 @@ const getProgressColor = (proyecto: any) => {
       doc.fontSize(12).text('No hay proyectos registrados en el sistema.', { align: 'center' });
     } else {
       proyectos.forEach((proyecto, index) => {
-        const avance = calcularAvance(proyecto);
+const avance = calcularAvance(proyecto);
         const color = getProgressColor(proyecto);
         const yPos = doc.y;
 
         doc.fontSize(12).font('Helvetica-Bold').text(`${index + 1}. ${proyecto.nombre}`);
-        doc.moveDown(0.5);
-        
-        doc.fontSize(10);
-        doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
-
-        doc.fontSize(10).font('Helvetica-Bold').text(`Poblacion Beneficiada:`,{ continued: true })
-            .font('Helvetica').text(`${proyecto.poblacionBeneficiada}`);
-        
-        doc.fontSize(10).font('Helvetica-Bold').text(`Municipio:`,{ continued: true })
-            .font('Helvetica').text(`${proyecto.comunidad}`);
-
-        doc.fontSize(10).font('Helvetica-Bold').text(`Fecha Final:`,{ continued: true })
-            .font('Helvetica').text(`${proyecto.fechaFinAprox}`);
         
         // Dibuja la barra de progreso
         const progressBarWidth = 200;
         const progressBarHeight = 10;
         const progressX = doc.page.width - 250;
-        const progressY = yPos + 18;
+        const progressY = yPos + 2;
+        
 
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
@@ -336,7 +323,22 @@ const getProgressColor = (proyecto: any) => {
         doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
            .fill(color);
         
-        doc.moveDown(2);
+        doc.moveDown(0.5);
+        
+        doc.fontSize(10).font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+           .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
+        doc.moveDown(0.2);
+           
+        doc.fontSize(10).font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+           .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+        doc.moveDown(0.2);
+
+        doc.fontSize(10).font('Helvetica-Bold').text('Avance: ', { continued: true })
+           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
+        doc.moveDown(0.2);
+        
+        
+        doc.moveDown(1.5); // Salto de línea para el siguiente proyecto
       });
     }
 
