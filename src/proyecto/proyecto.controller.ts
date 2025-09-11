@@ -313,6 +313,75 @@ export class ProyectoController {
         doc.moveDown(1.5);
       });
     }
+    let greenCount = 0;
+    let yellowCount = 0;
+    let redCount = 0;
+    let greyCount = 0;
+    proyectos.forEach(proyecto => {
+        const color = getProgressColor(proyecto);
+        switch (color) {
+            case '#28a745': greenCount++; break;
+            case '#ffc107': yellowCount++; break;
+            case '#dc3545': redCount++; break;
+            default: greyCount++; break; // Gris para proyectos sin fechas
+        }
+    });
+
+    const totalProjects = proyectos.length;
+    
+    // 2. Dibujar la gráfica de pastel
+    const chartRadius = 50;
+    const chartCenterX = 100;
+    const chartCenterY = doc.y + chartRadius + 20;
+    let currentAngle = 0;
+
+    const drawSlice = (color: string, count: number) => {
+        if (count === 0) return;
+        const sliceAngle = (count / totalProjects) * 360;
+        const startAngle = currentAngle;
+        const endAngle = currentAngle + sliceAngle;
+
+        doc.save()
+            .fill(color)
+            .moveTo(chartCenterX, chartCenterY)
+            .lineTo(
+                chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180),
+                chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)
+            )
+            .path(`M ${chartCenterX} ${chartCenterY} L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
+            .fill(color);
+        
+        currentAngle += sliceAngle;
+        doc.restore();
+    };
+
+    drawSlice('#28a745', greenCount);
+    drawSlice('#ffc107', yellowCount);
+    drawSlice('#dc3545', redCount);
+    drawSlice('#6c757d', greyCount);
+    
+    // 3. Dibujar la leyenda
+    const legendX = chartCenterX + chartRadius + 20;
+    const legendY = chartCenterY - chartRadius + 10;
+    const legendSpacing = 15;
+    
+    doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
+    doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
+
+    if (greenCount > 0) {
+        doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
+    }
+    if (yellowCount > 0) {
+        doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
+    }
+    if (redCount > 0) {
+        doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
+    }
+    if (greyCount > 0) {
+        doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
+    }
+    
+    doc.moveDown(6);
 
     doc.end();
   }
