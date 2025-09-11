@@ -295,6 +295,7 @@ export class ProyectoController {
         doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
            .fill(color);
         
+        doc.fontSize(10);
         doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
            .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
         doc.moveDown(0.2);
