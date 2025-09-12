@@ -181,7 +181,7 @@ export class ProyectoController {
 
   @Get('report/general')
   @UseGuards(AuthGuard('jwt'))
-  async generateGeneralReport(@Res() res: Response) {
+async generateGeneralReport(@Res() res: Response) {
     const proyectos = await this.proyectoService.findAll();
 
     const doc = new PDFDocument();
@@ -213,6 +213,7 @@ export class ProyectoController {
     doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
     doc.moveDown(2);
     
+    // --- LÓGICA CORREGIDA PARA CALCULAR PORCENTAJE Y COLOR ---
     const getPhaseTargetPercentage = (faseActual: number) => {
         if (faseActual < 1) return 0;
         if (faseActual >= 7) return 100;
@@ -221,13 +222,12 @@ export class ProyectoController {
         return 75 + (faseActual - 3) * percentagePerSubPhase;
     };
 
-    const calculateTimeBasedProgress = (fechaInicio: Date, fechaFinAprox: Date) => {
+    const calculateTimeBasedProgress = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
         if (!fechaInicio || !fechaFinAprox) return 0;
         const startDate = new Date(fechaInicio);
         const endDate = new Date(fechaFinAprox);
         const currentDate = new Date();
         if (currentDate < startDate) return 0;
-        if (currentDate > endDate) return 100;
         const totalDuration = endDate.getTime() - startDate.getTime();
         const elapsedDuration = currentDate.getTime() - startDate.getTime();
         if (totalDuration <= 0) return 100;
@@ -237,7 +237,7 @@ export class ProyectoController {
     const calcularAvance = (proyecto: any) => {
         const { fechaInicio, fechaFinAprox, faseActual } = proyecto;
         if (faseActual >= 7) return 100;
-        const timeBasedPercentage = fechaInicio && fechaFinAprox ? calculateTimeBasedProgress(fechaInicio, fechaFinAprox) : 0;
+        const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
         const phaseTargetPercentage = getPhaseTargetPercentage(faseActual ?? 0);
         let finalPercentage;
         const endDate = new Date(fechaFinAprox);
@@ -250,47 +250,43 @@ export class ProyectoController {
         return Math.min(100, Math.max(0, Math.round(finalPercentage)));
     };
 
-const getProgressColor = (proyecto: any) => {
+    const getProgressColor = (proyecto: any) => {
         const { fechaInicio, fechaFinAprox, faseActual } = proyecto;
-        
-        // Si el proyecto ha concluido, siempre es verde
         if (faseActual >= 7) return '#28a745';
-        
-        // Si no hay fechas, el estado es gris
         if (!fechaInicio || !fechaFinAprox) return '#6c757d';
-
+        
         const startDate = new Date(fechaInicio);
         const endDate = new Date(fechaFinAprox);
         const currentDate = new Date();
-
-        // Si ya pasó la fecha de fin y no está en la fase final, es rojo
-        if (currentDate > endDate) {
-            return '#dc3545';
-        }
         
         const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
         const phaseTargetPercentage = getPhaseTargetPercentage(faseActual ?? 0);
         
-        // El porcentaje de diferencia
-        const percentageDifference = timeBasedPercentage - phaseTargetPercentage;
-        // La duración total del proyecto en días
-        const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
         
-        // Días de atraso
-        const daysBehind = (phaseTargetPercentage - timeBasedPercentage) / 100 * totalDurationDays;
+        // El porcentaje de diferencia entre lo que debería llevar y lo que lleva
+        const percentageDifference = phaseTargetPercentage - timeBasedPercentage;
+        // La cantidad de días que representa esa diferencia
+        const daysBehind = (percentageDifference / 100) * totalDays;
         
         const YELLOW_DAYS_THRESHOLD = 4;
         const RED_DAYS_THRESHOLD = 5;
-        
+
+        // Si ya pasó la fecha de fin y no está en la fase 7, siempre es rojo
+        if (currentDate > endDate) {
+            return '#dc3545';
+        }
+
         // Lógica de color basada en los días de atraso
-        if (daysBehind >= RED_DAYS_THRESHOLD) {
-            return '#dc3545'; // Rojo si está muy atrasado (5 o más días)
+        if (daysBehind > RED_DAYS_THRESHOLD) {
+            return '#dc3545'; // Rojo si está muy atrasado (más de 5 días)
         } else if (daysBehind > 0 && daysBehind <= YELLOW_DAYS_THRESHOLD) {
             return '#ffc107'; // Amarillo si está levemente atrasado (1 a 4 días)
         } else {
             return '#28a745'; // Verde si está en tiempo o adelantado
         }
     };
+    // --- FIN LÓGICA CORREGIDA ---
 
     if (proyectos.length === 0) {
       doc.fontSize(12).fillColor('#000000').text('No hay proyectos registrados en el sistema.', { align: 'center' });
@@ -299,28 +295,28 @@ const getProgressColor = (proyecto: any) => {
         const avance = calcularAvance(proyecto);
         const color = getProgressColor(proyecto);
         
+        const formatDate = (date: Date) => {
+          if (!date) return 'N/A';
+          const d = new Date(date);
+          return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+        };
 
         const yPos = doc.y;
 
         doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
-                
-
+        
         const progressBarWidth = 200;
         const progressBarHeight = 10;
         const progressX = doc.page.width - 250;
         const progressY = yPos + 18;
 
-                
         doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
            .stroke('#e0e0e0');
 
         doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
            .fill(color);
         
-        doc.fontSize(10);
-        doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
-        doc.moveDown(0.2);
+        doc.moveDown(0.5);
         
         doc.fontSize(10).fillColor('#000000');
         doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
@@ -329,6 +325,10 @@ const getProgressColor = (proyecto: any) => {
            
         doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
            .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+        doc.moveDown(0.2);
+
+        doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+           .font('Helvetica').text(`Fase ${proyecto.faseActual} (${avance}%)`);
         doc.moveDown(0.2);
         
         
