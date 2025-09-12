@@ -250,24 +250,46 @@ export class ProyectoController {
         return Math.min(100, Math.max(0, Math.round(finalPercentage)));
     };
 
-    const getProgressColor = (proyecto: any) => {
+const getProgressColor = (proyecto: any) => {
         const { fechaInicio, fechaFinAprox, faseActual } = proyecto;
+        
+        // Si el proyecto ha concluido, siempre es verde
         if (faseActual >= 7) return '#28a745';
+        
+        // Si no hay fechas, el estado es gris
         if (!fechaInicio || !fechaFinAprox) return '#6c757d';
+
         const startDate = new Date(fechaInicio);
         const endDate = new Date(fechaFinAprox);
         const currentDate = new Date();
-        if (currentDate > endDate) return '#dc3545';
+
+        // Si ya pasó la fecha de fin y no está en la fase final, es rojo
+        if (currentDate > endDate) {
+            return '#dc3545';
+        }
+        
         const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
         const phaseTargetPercentage = getPhaseTargetPercentage(faseActual ?? 0);
-        const totalDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-        const percentageDifference = phaseTargetPercentage - timeBasedPercentage;
-        const daysBehind = (percentageDifference / 100) * totalDays;
+        
+        // El porcentaje de diferencia
+        const percentageDifference = timeBasedPercentage - phaseTargetPercentage;
+        // La duración total del proyecto en días
+        const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+        
+        // Días de atraso
+        const daysBehind = (phaseTargetPercentage - timeBasedPercentage) / 100 * totalDurationDays;
+        
         const YELLOW_DAYS_THRESHOLD = 4;
         const RED_DAYS_THRESHOLD = 5;
-        if (daysBehind >= RED_DAYS_THRESHOLD) return '#dc3545';
-        if (daysBehind > 0 && daysBehind <= YELLOW_DAYS_THRESHOLD) return '#ffc107';
-        return '#28a745';
+        
+        // Lógica de color basada en los días de atraso
+        if (daysBehind >= RED_DAYS_THRESHOLD) {
+            return '#dc3545'; // Rojo si está muy atrasado (5 o más días)
+        } else if (daysBehind > 0 && daysBehind <= YELLOW_DAYS_THRESHOLD) {
+            return '#ffc107'; // Amarillo si está levemente atrasado (1 a 4 días)
+        } else {
+            return '#28a745'; // Verde si está en tiempo o adelantado
+        }
     };
 
     if (proyectos.length === 0) {
