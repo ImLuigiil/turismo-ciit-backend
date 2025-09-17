@@ -556,7 +556,7 @@ async generateGeneralReport(@Res() res: Response) {
     }
 
     if (project.imagenes && project.imagenes.length > 0) {
-      doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
+      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
       doc.moveDown(1);
 
       const imagePathBase = join(__dirname, '..', 'uploads');
