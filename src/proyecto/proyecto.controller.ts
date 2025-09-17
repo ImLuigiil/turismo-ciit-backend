@@ -572,14 +572,14 @@ async generateGeneralReport(@Res() res: Response) {
           });
           doc.moveDown(1);
         } else {
-          doc.fontSize(12).font('Helvetica').text(`Imagen ${index + 1}: Archivo no encontrado en el servidor.`);
-          doc.moveDown(1);
+          //doc.fontSize(12).font('Helvetica').text(`Imagen ${index + 1}: Archivo no encontrado en el servidor.`);
+          //doc.moveDown(1);
         }
       });
     } else {
-      doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
-      doc.moveDown(1);
-      doc.fontSize(12).font('Helvetica').text('No hay imágenes asociadas a este proyecto.');
+      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
+      //doc.moveDown(1);
+      //doc.fontSize(12).font('Helvetica').text('No hay imágenes asociadas a este proyecto.');
       doc.moveDown(1);
     }
     doc.end();
