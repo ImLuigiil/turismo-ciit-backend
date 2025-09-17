@@ -486,17 +486,6 @@ async generateGeneralReport(@Res() res: Response) {
     doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
       .font('Helvetica').text(`Fase ${project.faseActual !== null ? project.faseActual : 'N/A'} (${avance}%)`);
     doc.moveDown(1);
-
-    const progressBarWidth = 500;
-    const progressBarHeight = 15;
-    const progressX = (doc.page.width - progressBarWidth) / 2;
-    const progressY = doc.y;
-
-    doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
-        .stroke('#e0e0e0');
-    doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
-        .fill(color);
-    doc.moveDown(1);
     
     doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
         .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
