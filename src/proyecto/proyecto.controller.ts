@@ -237,6 +237,13 @@ export class ProyectoController {
   }
 
   @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string) {
+    return this.proyectoService.remove(+id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
   @Patch(':id/concluir-fase')
   @UseInterceptors(
     FileInterceptor('documento', {
