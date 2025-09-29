@@ -304,7 +304,7 @@ async generateGeneralReport(@Res() res: Response) {
     const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
     const itoImageBuffer = Buffer.from(itoResponse.data);
 
-    doc.image(tecNMImageBuffer, 150, 50, { width: 100 });
+    doc.image(tecNMImageBuffer, 50, 50, { width: 150 });
     doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
   } catch (error) {
     console.error('Error al descargar los logos:', error.message);
@@ -343,6 +343,9 @@ async generateGeneralReport(@Res() res: Response) {
 
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
           .fill(color);
+
+      doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+          .font('Helvetica').text(`(${avance}%)`);
       
       doc.moveDown(0.5);
       
