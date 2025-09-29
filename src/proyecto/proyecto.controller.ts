@@ -283,156 +283,159 @@ export class ProyectoController {
   }
 
   @Get('report/general')
-  @UseGuards(AuthGuard('jwt'))
+@UseGuards(AuthGuard('jwt'))
 async generateGeneralReport(@Res() res: Response) {
-  const proyectos = await this.proyectoService.findAll();
+  const proyectos = await this.proyectoService.findAll();
 
-  const doc = new PDFDocument();
-  const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
+  const doc = new PDFDocument();
+  const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
 
-  res.setHeader('Content-Type', 'application/pdf');
-  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-  doc.pipe(res);
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+  doc.pipe(res);
 
-  const tecNMUrl = 'https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png';
-  const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
+  const tecNMUrl = 'https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png';
+  const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
 
-  try {
-    const [tecNMResponse, itoResponse] = await Promise.all([
-      axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
-      axios.get(itoUrl, { responseType: 'arraybuffer' })
-    ]);
-    const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
-    const itoImageBuffer = Buffer.from(itoResponse.data);
+  try {
+    const [tecNMResponse, itoResponse] = await Promise.all([
+      axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
+      axios.get(itoUrl, { responseType: 'arraybuffer' })
+    ]);
+    const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
+    const itoImageBuffer = Buffer.from(itoResponse.data);
 
-    doc.image(tecNMImageBuffer, 50, 50, { width: 100 });
-    doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
-  } catch (error) {
-    console.error('Error al descargar los logos:', error.message);
-    doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
-  }
+    const logoWidth = 80;
+    doc.image(tecNMImageBuffer, 50, 50, { width: logoWidth });
+    doc.image(itoImageBuffer, doc.page.width - 50 - logoWidth, 50, { width: logoWidth });
+  } catch (error) {
+    console.error('Error al descargar los logos:', error.message);
+    doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
+  }
 
-  doc.moveDown(4);
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
-  doc.moveDown(2);
-  
-  const formatDate = (date: Date | null) => {
-    if (!date) return 'N/A';
-    const d = new Date(date);
-    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-  };
+  doc.moveDown(4);
+  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
+  doc.moveDown(2);
+  
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
 
-  if (proyectos.length === 0) {
-    doc.fontSize(12).fillColor('#000000').text('No hay proyectos registrados en el sistema.', { align: 'center' });
-  } else {
-    proyectos.forEach((proyecto, index) => {
-      const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1; 
-      const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-      const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+  if (proyectos.length === 0) {
+    doc.fontSize(12).fillColor('#000000').text('No hay proyectos registrados en el sistema.', { align: 'center' });
+  } else {
+    proyectos.forEach((proyecto, index) => {
+      const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1; 
+      const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+      const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+      
+      const yPos = doc.y;
+
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
+      
+      const progressBarWidth = 200;
+      const progressBarHeight = 10;
+      const progressX = doc.page.width - 250;
+      const progressY = yPos + 18;
+
+      doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
+          .stroke('#e0e0e0');
+
+      doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
+          .fill(color);
       
-      const yPos = doc.y;
+      doc.fontSize(8).fillColor('#FFFFFF').text(`${avance}%`, progressX + (avance / 100) * progressBarWidth - 20, progressY + 2);
 
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
-      
-      const progressBarWidth = 200;
-      const progressBarHeight = 10;
-      const progressX = doc.page.width - 250;
-      const progressY = yPos + 18;
+      doc.moveDown(0.5);
+      
+      doc.fontSize(10).fillColor('#000000');
+      doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+          .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
+      doc.moveDown(0.2);
+          
+      doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+          .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+      doc.moveDown(0.2);
 
-      doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
-          .stroke('#e0e0e0');
+      doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+          .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
+      doc.moveDown(0.2);
+      
+      doc.moveDown(1.5);
+    });
+  }
+  let greenCount = 0;
+  let yellowCount = 0;
+  let redCount = 0;
+  let greyCount = 0;
+  proyectos.forEach(proyecto => {
+      const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1;
+      const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+      switch (color) {
+          case '#28a745': greenCount++; break;
+          case '#ffc107': yellowCount++; break;
+          case '#dc3545': redCount++; break;
+          default: greyCount++; break;
+      }
+  });
 
-      doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
-          .fill(color);
-      
-      doc.moveDown(0.5);
-      
-      doc.fontSize(10).fillColor('#000000');
-      doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
-          .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
-      doc.moveDown(0.2);
-          
-      doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
-          .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-      doc.moveDown(0.2);
+  const totalProjects = proyectos.length;
+  
+  const chartRadius = 50;
+  const chartCenterX = 100;
+  const chartCenterY = doc.y + chartRadius + 20;
+  let currentAngle = 0;
 
-      doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-          .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'} (${avance}%)`);
-      doc.moveDown(0.2);
-      
-      doc.moveDown(1.5);
-    });
-  }
-  let greenCount = 0;
-  let yellowCount = 0;
-  let redCount = 0;
-  let greyCount = 0;
-  proyectos.forEach(proyecto => {
-      const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1;
-      const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-      switch (color) {
-          case '#28a745': greenCount++; break;
-          case '#ffc107': yellowCount++; break;
-          case '#dc3545': redCount++; break;
-          default: greyCount++; break;
-      }
-  });
+  const drawSlice = (color: string, count: number) => {
+      if (count === 0) return;
+      const sliceAngle = (count / totalProjects) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sliceAngle;
 
-  const totalProjects = proyectos.length;
-  
-  const chartRadius = 50;
-  const chartCenterX = 100;
-  const chartCenterY = doc.y + chartRadius + 20;
-  let currentAngle = 0;
+      doc.save()
+          .fill(color)
+          .moveTo(chartCenterX, chartCenterY)
+          .lineTo(
+              chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180),
+              chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)
+          )
+          .path(`M ${chartCenterX} ${chartCenterY} L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
+          .fill(color);
+      
+      currentAngle += sliceAngle;
+      doc.restore();
+  };
 
-  const drawSlice = (color: string, count: number) => {
-      if (count === 0) return;
-      const sliceAngle = (count / totalProjects) * 360;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + sliceAngle;
+  drawSlice('#28a745', greenCount);
+  drawSlice('#ffc107', yellowCount);
+  drawSlice('#dc3545', redCount);
+  drawSlice('#6c757d', greyCount);
+  
+  const legendX = chartCenterX + chartRadius + 20;
+  const legendY = chartCenterY - chartRadius + 10;
+  const legendSpacing = 15;
+  
+  doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
+  doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
 
-      doc.save()
-          .fill(color)
-          .moveTo(chartCenterX, chartCenterY)
-          .lineTo(
-              chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180),
-              chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)
-          )
-          .path(`M ${chartCenterX} ${chartCenterY} L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
-          .fill(color);
-      
-      currentAngle += sliceAngle;
-      doc.restore();
-  };
+  if (greenCount > 0) {
+      doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
+  }
+  if (yellowCount > 0) {
+      doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
+  }
+  if (redCount > 0) {
+      doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
+  }
+  if (greyCount > 0) {
+      doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
+  }
+  
+  doc.moveDown(6);
 
-  drawSlice('#28a745', greenCount);
-  drawSlice('#ffc107', yellowCount);
-  drawSlice('#dc3545', redCount);
-  drawSlice('#6c757d', greyCount);
-  
-  const legendX = chartCenterX + chartRadius + 20;
-  const legendY = chartCenterY - chartRadius + 10;
-  const legendSpacing = 15;
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
-  doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
-
-  if (greenCount > 0) {
-      doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
-  }
-  if (yellowCount > 0) {
-      doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
-  }
-  if (redCount > 0) {
-      doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
-  }
-  if (greyCount > 0) {
-      doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
-  }
-  
-  doc.moveDown(6);
-
-  doc.end();
+  doc.end();
 }
 
   @Get(':id/report')
