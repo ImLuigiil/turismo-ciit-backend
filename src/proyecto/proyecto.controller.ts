@@ -322,7 +322,7 @@ async generateGeneralReport(@Res() res: Response) {
     const d = new Date(date);
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
-
+//Esto es una prueba
   if (proyectos.length === 0) {
     doc.fontSize(12).fillColor('#000000').text('No hay proyectos registrados en el sistema.', { align: 'center' });
   } else {
