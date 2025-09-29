@@ -311,7 +311,7 @@ async generateGeneralReport(@Res() res: Response) {
     doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
   }
 
-  doc.moveDown(4);
+  doc.moveDown(6);
   doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
   doc.moveDown(2);
   
@@ -342,10 +342,8 @@ async generateGeneralReport(@Res() res: Response) {
           .stroke('#e0e0e0');
 
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
-          .fill(color);
-
-      doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-          .font('Helvetica').text(`(${avance}%)`);
+          .fill(color)
+          .font('Helvetica-Bold').text(`(${avance}%)`);
       
       doc.moveDown(0.5);
       
