@@ -236,13 +236,12 @@ export class ProyectoController {
     return this.proyectoService.updateProjectWithImages(+id, updateProyectoDto, newImages, imagesToDeleteIds, imagesToUpdateData);
   }
 
-  @UseGuards(AuthGuard('jwt'))
+    @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id') id: string) {
     return this.proyectoService.remove(+id);
   }
-
   @UseGuards(AuthGuard('jwt'))
   @Patch(':id/concluir-fase')
   @UseInterceptors(
@@ -305,7 +304,7 @@ async generateGeneralReport(@Res() res: Response) {
     const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
     const itoImageBuffer = Buffer.from(itoResponse.data);
 
-    doc.image(tecNMImageBuffer, 100, 100, { width: 200 });
+    doc.image(tecNMImageBuffer, 150, 50, { width: 100 });
     doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
   } catch (error) {
     console.error('Error al descargar los logos:', error.message);
@@ -332,7 +331,7 @@ async generateGeneralReport(@Res() res: Response) {
       
       const yPos = doc.y;
 
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index}. ${proyecto.nombre}`);
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
       
       const progressBarWidth = 200;
       const progressBarHeight = 10;
@@ -344,8 +343,6 @@ async generateGeneralReport(@Res() res: Response) {
 
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
           .fill(color);
-      doc.fontSize(10).fillColor('#000000').text(`${avance}% de avance`, progressX, progressY + progressBarHeight + 5);
-
       
       doc.moveDown(0.5);
       
