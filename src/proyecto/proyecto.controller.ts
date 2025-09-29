@@ -342,8 +342,9 @@ async generateGeneralReport(@Res() res: Response) {
           .stroke('#e0e0e0');
 
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
-          .fill(color)
-          .font('Helvetica-Bold').text(`(${avance}%)`);
+          .fill(color);
+
+      doc.fontSize(10).fillColor('#000000').text(`${avance}% de avance`, progressX, progressY + progressBarHeight + 5);
       
       doc.moveDown(0.5);
       
