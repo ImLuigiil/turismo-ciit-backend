@@ -281,7 +281,7 @@ export class ProyectoController {
     return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
   }
 
-  @Get('report/general')
+@Get('report/general')
 @UseGuards(AuthGuard('jwt'))
 async generateGeneralReport(@Res() res: Response) {
   const proyectos = await this.proyectoService.findAll();
@@ -304,17 +304,24 @@ async generateGeneralReport(@Res() res: Response) {
     const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
     const itoImageBuffer = Buffer.from(itoResponse.data);
 
-    doc.image(tecNMImageBuffer, 50, 50, { width: 170 });
-    doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
+    const logoWidth = 80;
+    doc.image(tecNMImageBuffer, 50, 50, { width: logoWidth });
+    doc.image(itoImageBuffer, doc.page.width - 50 - logoWidth, 50, { width: logoWidth });
   } catch (error) {
     console.error('Error al descargar los logos:', error.message);
     doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
   }
 
-  doc.moveDown(6);
+  doc.moveDown(4);
   doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
   doc.moveDown(2);
   
+  const formatDate = (date: Date | null) => {
+    if (!date) return 'N/A';
+    const d = new Date(date);
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+
   if (proyectos.length === 0) {
     doc.fontSize(12).fillColor('#000000').text('No hay proyectos registrados en el sistema.', { align: 'center' });
   } else {
@@ -323,56 +330,41 @@ async generateGeneralReport(@Res() res: Response) {
       const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
       const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
       
-      // Guardamos la posición Y para el inicio de este bloque de proyecto
-      const startY = doc.y;
+      const yPos = doc.y;
 
-      // Título del proyecto a la izquierda
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
-      doc.moveDown(0.5);
-
-      // Información del proyecto (columna izquierda)
-      doc.fontSize(10).fillColor('#000000');
-      doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true, align: 'left' })
-          .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
-      doc.moveDown(0.2);
       
-      doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true, align: 'left' })
-          .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-      doc.moveDown(0.2);
-
-      doc.font('Helvetica-Bold').text('Avance: ', { continued: true, align: 'left' })
-          .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
-
-      // Barra de progreso (columna derecha)
       const progressBarWidth = 200;
       const progressBarHeight = 10;
       const progressX = doc.page.width - 250;
+      const progressY = yPos + 18;
+
+      doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
+          .stroke('#e0e0e0');
+
+      doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
+          .fill(color);
+      
+      doc.fontSize(8).fillColor('#FFFFFF').text(`${avance}%`, progressX + (avance / 100) * progressBarWidth - 20, progressY + 2);
+
+      doc.moveDown(0.5);
       
-      // Mantenemos la misma posición Y que la primera línea de texto para alinear
-      const progressY = startY + 18; 
+      doc.fontSize(10).fillColor('#000000');
+      doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+          .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
+      doc.moveDown(0.2);
+          
+      doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+          .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+      doc.moveDown(0.2);
+
+      doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+          .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
+      doc.moveDown(0.2);
       
-      // Dibujar la barra gris de fondo
-      doc.rect(progressX, progressY, progressBarWidth, progressBarHeight).stroke('#e0e0e0');
-
-      // Dibujar la barra de progreso de color
-      doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight).fill(color);
-
-      // Texto del avance en porcentaje (alineado al centro de la barra)
-      const textAvance = `${avance}%`;
-      const textWidth = doc.widthOfString(textAvance);
-      const textHeight = doc.heightOfString(textAvance);
-
-      doc.fontSize(8).fillColor('#ffffff').text(textAvance, progressX + (progressBarWidth - textWidth) / 2, progressY + (progressBarHeight - textHeight) / 2);
-
-      // Devolvemos el color de texto a negro para el siguiente bloque
-      doc.fillColor('#000000');
-
-      // Espacio entre proyectos
       doc.moveDown(1.5);
     });
   }
-  
-  // El resto del código para el resumen del gráfico de pastel permanece igual.
   let greenCount = 0;
   let yellowCount = 0;
   let redCount = 0;
