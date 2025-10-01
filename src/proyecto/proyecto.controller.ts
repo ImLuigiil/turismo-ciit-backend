@@ -352,7 +352,7 @@ async generateGeneralReport(@Res() res: Response) {
         doc.fillColor('#BBBBBB') // Color de texto blanco para que se vea bien sobre el color de avance
             .text(textAvance, progressX + (progressBarWidth - textWidth) / 2, progressY + (progressBarHeight - textHeight) / 2);
       
-      doc.moveUp(0.5);
+      doc.moveUp(1);
       
       doc.fontSize(10).fillColor('#000000');
       doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
