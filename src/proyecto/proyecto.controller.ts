@@ -339,15 +339,15 @@ async generateGeneralReport(@Res() res: Response) {
       doc.fontSize(10).fillColor('#000000');
       doc.font('Helvetica-Bold').text('Comunidad: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
-      doc.moveDown(0.2);
+      doc.moveDown(2);
         
       doc.font('Helvetica-Bold').text('Población Beneficiada: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-      doc.moveDown(0.2);
+      doc.moveDown(2);
 
       doc.font('Helvetica-Bold').text('Avance: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
-      doc.moveDown(1);
+      doc.moveDown(2);
       
       // Right side content (Progress Bar)
       const progressBarWidth = 200;
