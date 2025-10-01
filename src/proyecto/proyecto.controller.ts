@@ -305,7 +305,7 @@ async generateGeneralReport(@Res() res: Response) {
     const itoImageBuffer = Buffer.from(itoResponse.data);
 
     const logoWidth = 80;
-    doc.image(tecNMImageBuffer, 50, 50, { width: logoWidth });
+    doc.image(tecNMImageBuffer, 50, 50, { width: 170 });
     doc.image(itoImageBuffer, doc.page.width - 50 - logoWidth, 50, { width: logoWidth });
   } catch (error) {
     console.error('Error al descargar los logos:', error.message);
@@ -363,9 +363,9 @@ async generateGeneralReport(@Res() res: Response) {
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight).fill(color);
       
       // Calculate the text position inside the progress bar
-      const textX = progressX + (avance / 100) * progressBarWidth - 20;
+      const textX = progressX + (avance / 100) * progressBarWidth - 15;
       const textY = progressY + 2;
-      doc.fontSize(8).fillColor('#FFFFFF').text(`${avance}%`, textX, textY);
+      doc.fontSize(8).fillColor('#000000').text(`${avance}%`, textX, textY);
 
       // Move to the next project's position, ensuring enough space
       doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
