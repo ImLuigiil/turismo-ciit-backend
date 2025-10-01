@@ -337,17 +337,21 @@ async generateGeneralReport(@Res() res: Response) {
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`, 50, yPos);
       doc.moveDown(0.5);
       doc.fontSize(10).fillColor('#000000');
-      doc.font('Helvetica-Bold').text('Comunidad: ', 50, doc.y, { continued: true })
-          .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
-      doc.moveDown(2);
-        
-      doc.font('Helvetica-Bold').text('Población Beneficiada: ', 50, doc.y, { continued: true })
-          .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-      doc.moveDown(2);
+      
+      const textStartX = 50;
+      let currentTextY = doc.y;
 
-      doc.font('Helvetica-Bold').text('Avance: ', 50, doc.y, { continued: true })
+      doc.font('Helvetica-Bold').text('Comunidad: ', textStartX, currentTextY, { continued: true })
+          .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
+      currentTextY = doc.y + 5; // Aumentar la posición Y
+
+      doc.font('Helvetica-Bold').text('Población Beneficiada: ', textStartX, currentTextY, { continued: true })
+          .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+      currentTextY = doc.y + 5; // Aumentar la posición Y
+
+      doc.font('Helvetica-Bold').text('Avance: ', textStartX, currentTextY, { continued: true })
           .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
-      doc.moveDown(2);
+      currentTextY = doc.y + 5; // Aumentar la posición Y
       
       // Right side content (Progress Bar)
       const progressBarWidth = 200;
@@ -364,7 +368,7 @@ async generateGeneralReport(@Res() res: Response) {
       doc.fontSize(8).fillColor('#FFFFFF').text(`${avance}%`, textX, textY);
 
       // Move to the next project's position, ensuring enough space
-      doc.y = Math.max(doc.y, progressY + progressBarHeight) + 15;
+      doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
       if (doc.y > doc.page.height - 100) {
         doc.addPage();
         doc.y = 50; // Reset y for new page
