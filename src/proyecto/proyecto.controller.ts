@@ -347,7 +347,7 @@ async generateGeneralReport(@Res() res: Response) {
 
       doc.font('Helvetica-Bold').text('Avance: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
-      doc.moveDown(0.2);
+      doc.moveDown(1);
       
       // Right side content (Progress Bar)
       const progressBarWidth = 200;
