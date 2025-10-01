@@ -344,6 +344,13 @@ async generateGeneralReport(@Res() res: Response) {
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
           .fill(color);
 
+      // Muestra el porcentaje de avance dentro de la barra
+        const textAvance = `${avance}%`;
+        const textWidth = doc.widthOfString(textAvance);
+        const textHeight = doc.heightOfString(textAvance);
+
+        doc.fillColor('#ffffff') // Color de texto blanco para que se vea bien sobre el color de avance
+            .text(textAvance, progressX + (progressBarWidth - textWidth) / 2, progressY + (progressBarHeight - textHeight) / 2);
       
       doc.moveDown(0.5);
       
