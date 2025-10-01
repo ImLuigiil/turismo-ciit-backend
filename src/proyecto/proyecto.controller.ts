@@ -330,39 +330,45 @@ async generateGeneralReport(@Res() res: Response) {
       const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
       const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
       
+      // Calculate the starting Y position for this project's section
       const yPos = doc.y;
 
-      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`);
-      
-      const progressBarWidth = 200;
-      const progressBarHeight = 10;
-      const progressX = doc.page.width - 250;
-      const progressY = yPos + 18;
-
-      doc.rect(progressX, progressY, progressBarWidth, progressBarHeight)
-          .stroke('#e0e0e0');
-
-      doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight)
-          .fill(color);
-      
-      doc.fontSize(8).fillColor('#FFFFFF').text(`${avance}%`, progressX + (avance / 100) * progressBarWidth - 20, progressY + 2);
-
+      // Left side content (Project Details)
+      doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`, 50, yPos);
       doc.moveDown(0.5);
-      
       doc.fontSize(10).fillColor('#000000');
-      doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+      doc.font('Helvetica-Bold').text('Comunidad: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
       doc.moveDown(0.2);
-          
-      doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+        
+      doc.font('Helvetica-Bold').text('Población Beneficiada: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
       doc.moveDown(0.2);
 
-      doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+      doc.font('Helvetica-Bold').text('Avance: ', 50, doc.y, { continued: true })
           .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
       doc.moveDown(0.2);
       
-      doc.moveDown(1.5);
+      // Right side content (Progress Bar)
+      const progressBarWidth = 200;
+      const progressBarHeight = 10;
+      const progressX = doc.page.width - 50 - progressBarWidth; // Position from the right edge
+      const progressY = yPos + 18; // Aligns with the project title
+
+      doc.rect(progressX, progressY, progressBarWidth, progressBarHeight).stroke('#e0e0e0');
+      doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight).fill(color);
+      
+      // Calculate the text position inside the progress bar
+      const textX = progressX + (avance / 100) * progressBarWidth - 20;
+      const textY = progressY + 2;
+      doc.fontSize(8).fillColor('#FFFFFF').text(`${avance}%`, textX, textY);
+
+      // Move to the next project's position, ensuring enough space
+      doc.y = Math.max(doc.y, progressY + progressBarHeight) + 15;
+      if (doc.y > doc.page.height - 100) {
+        doc.addPage();
+        doc.y = 50; // Reset y for new page
+      }
     });
   }
   let greenCount = 0;
