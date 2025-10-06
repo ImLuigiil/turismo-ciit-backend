@@ -1,4 +1,4 @@
-// src/proyecto/proyecto.controller.ts
+
 import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile, NotFoundException } from '@nestjs/common';
 import { ProyectoService } from './proyecto.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
@@ -14,10 +14,6 @@ import * as fs from 'fs';
 import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 
-// ===================================================================================
-// INICIO: LÓGICA DE PROGRESO DEL FRONTEND ADAPTADA
-// Solución al problema de 'number | null'
-// ===================================================================================
 
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
   if (!fechaInicio || !fechaFinAprox) {
@@ -115,9 +111,6 @@ const getProgressColor = (fechaInicio: Date | null, fechaFinAprox: Date | null, 
   return '#28a745';
 };
 
-// ===================================================================================
-// FIN: LÓGICA DE PROGRESO DEL FRONTEND ADAPTADA
-// ===================================================================================
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -147,7 +140,7 @@ export class ProyectoController {
       }),
       fileFilter: (req, file, cb) => {
         if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
+          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)'), false);
         }
         cb(null, true);
       },
@@ -329,11 +322,10 @@ async generateGeneralReport(@Res() res: Response) {
       const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1; 
       const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
       const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-      
-      // Calculate the starting Y position for this project's section
+
       const yPos = doc.y;
 
-      // Left side content (Project Details)
+
       doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`, 50, yPos);
       doc.moveDown(0.5);
       doc.fontSize(10).fillColor('#000000');
@@ -343,26 +335,24 @@ async generateGeneralReport(@Res() res: Response) {
 
       doc.font('Helvetica-Bold').text('Comunidad: ', textStartX, currentTextY, { continued: true })
           .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
-      currentTextY = doc.y + 5; // Aumentar la posición Y
+      currentTextY = doc.y + 5;
 
       doc.font('Helvetica-Bold').text('Población Beneficiada: ', textStartX, currentTextY, { continued: true })
           .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-      currentTextY = doc.y + 5; // Aumentar la posición Y
+      currentTextY = doc.y + 5;
 
       doc.font('Helvetica-Bold').text('Avance: ', textStartX, currentTextY, { continued: true })
           .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`);
-      currentTextY = doc.y + 5; // Aumentar la posición Y
+      currentTextY = doc.y + 5;
       
-      // Right side content (Progress Bar)
       const progressBarWidth = 200;
       const progressBarHeight = 10;
-      const progressX = doc.page.width - 50 - progressBarWidth; // Position from the right edge
-      const progressY = yPos + 18; // Aligns with the project title
+      const progressX = doc.page.width - 50 - progressBarWidth; 
+      const progressY = yPos + 18; 
 
       doc.rect(progressX, progressY, progressBarWidth, progressBarHeight).stroke('#e0e0e0');
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight).fill(color);
       
-      // Calculate the text position inside the progress bar
       const textX = progressX + (avance / 100) * progressBarWidth - 15;
       const textY = progressY + 2;
       doc.fontSize(8).fillColor('#000000').text(`${avance}%`, textX, textY);
