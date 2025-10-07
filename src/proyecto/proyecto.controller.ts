@@ -467,14 +467,14 @@ async generateGeneralReport(@Res() res: Response) {
       const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
       const itoImageBuffer = Buffer.from(itoResponse.data);
 
-      doc.image(tecNMImageBuffer, 50, 50, { width: 170 });
+      doc.image(tecNMImageBuffer, 50, 50, { width: 180 });
       doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
     } catch (error) {
       console.error('Error al descargar los logos:', error.message);
       doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
     }
 
-    doc.moveDown(4);
+    doc.moveDown(6);
     doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
     doc.moveDown(1);
 
