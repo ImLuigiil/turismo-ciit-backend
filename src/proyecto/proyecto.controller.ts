@@ -357,7 +357,6 @@ async generateGeneralReport(@Res() res: Response) {
       const textY = progressY + 2;
       doc.fontSize(8).fillColor('#000000').text(`${avance}%`, textX, textY);
 
-      // Move to the next project's position, ensuring enough space
       doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
       if (doc.y > doc.page.height - 100) {
         doc.addPage();
