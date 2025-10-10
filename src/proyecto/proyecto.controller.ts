@@ -229,12 +229,31 @@ export class ProyectoController {
     return this.proyectoService.updateProjectWithImages(+id, updateProyectoDto, newImages, imagesToDeleteIds, imagesToUpdateData);
   }
 
-    @UseGuards(AuthGuard('jwt'))
+  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id') id: string) {
-    return this.proyectoService.remove(+id);
+  async remove(@Param('id') id: string) {
+    const proyectoId = +id;
+    
+    // 1. Obtener el proyecto
+    const proyecto = await this.proyectoService.findOne(proyectoId);
+
+    if (!proyecto) {
+        throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado.`);
+    }
+
+    // 2. Validación de Fase antes de Eliminar
+    // Usamos el operador de coalescencia nula (??) para asegurar que si faseActual es null/undefined,
+    // se trate como 1 para la validación.
+    const faseActualSegura = proyecto.faseActual ?? 1; // Asume Fase 1 si es null/undefined
+
+    if (faseActualSegura > 1) {
+        throw new BadRequestException('El proyecto no puede ser eliminado porque ya ha iniciado la Fase 2 o superior. Solo los proyectos en Fase 1 pueden ser borrados.');
+    }
+    
+    return this.proyectoService.remove(proyectoId);
   }
+
   @UseGuards(AuthGuard('jwt'))
   @Patch(':id/concluir-fase')
   @UseInterceptors(
