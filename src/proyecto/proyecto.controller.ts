@@ -470,7 +470,7 @@ async generateGeneralReport(@Res() res: Response) {
       doc.image(tecNMImageBuffer, 50, 50, { width: 180 });
       doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
     } catch (error) {
-      console.error('Error al descargar los logos (reinicia la app):', error.message);
+      console.error('Error al descargar los logos (reinicia la app 1):', error.message);
       doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
     }
 
