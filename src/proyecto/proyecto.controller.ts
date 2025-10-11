@@ -545,10 +545,6 @@ async generateGeneralReport(@Res() res: Response) {
         .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Cambios de Nombre: ', { continued: true })
-        .font('Helvetica').text(`${project.nombreCambiosCount || 0}`);
-    doc.moveDown(2);
-
     if (project.justificacionFase) {
       doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
       doc.moveDown(1);
