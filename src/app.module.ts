@@ -40,6 +40,7 @@ import { Curso } from './curso/curso.entity';
 import { ProyectoResidencia } from './proyecto-residencia/proyecto-residencia.entity';
 import { PersonaProyecto } from './persona-proyecto/persona-proyecto.entity';
 import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
+import { HistorialFaseModule } from './historial-fase/historial-fase.module';
 
 
 @Module({
@@ -92,6 +93,7 @@ import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
     PersonaProyectoModule,
     SeedModule,
     ProyectoImagenModule,
+    HistorialFaseModule,
   ],
   controllers: [AppController],
   providers: [AppService],
