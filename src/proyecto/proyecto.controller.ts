@@ -61,8 +61,8 @@ const calculateTimeBasedProgress = (fechaInicio: Date | null, fechaFinAprox: Dat
 
 const calcularAvance = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null) => {
     if (!fechaInicio || !fechaFinAprox || faseActual === null) return 0;
-    if (faseActual === 7) {
-      return 100;
+    if ((faseActual ?? 0) >= 7) {
+        return 100;
     }
     const getPhaseProgress = (fase: number) => {
         if (fase <= 1) return 0;
