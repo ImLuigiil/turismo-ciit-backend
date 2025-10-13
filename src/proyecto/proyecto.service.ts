@@ -156,7 +156,7 @@ async concluirFase(
     const nextFase = (proyecto.faseActual ?? 1) + 1;
 
     if (nextFase > 7) {
-      throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7).');
+      throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7)');
     }
     
     // 1. Crear el registro en la nueva tabla de historial
