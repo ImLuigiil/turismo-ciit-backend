@@ -41,7 +41,7 @@ import { ProyectoResidencia } from './proyecto-residencia/proyecto-residencia.en
 import { PersonaProyecto } from './persona-proyecto/persona-proyecto.entity';
 import { ProyectoImagen } from './proyecto-imagen/proyecto-imagen.entity';
 import { HistorialFaseModule } from './historial-fase/historial-fase.module';
-
+import { HistorialFase } from './historial-fase/historial-fase.entity';
 
 @Module({
   imports: [
@@ -72,6 +72,7 @@ import { HistorialFaseModule } from './historial-fase/historial-fase.module';
         ProyectoResidencia,
         PersonaProyecto,
         ProyectoImagen,
+        HistorialFase,
       ],
       synchronize: false, 
     }),
