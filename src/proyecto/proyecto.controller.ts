@@ -522,7 +522,7 @@ async generateGeneralReport(@Res() res: Response) {
         .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
     doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Población Beneficiada: ', { continued: true })
+    doc.font('Helvetica-Bold').text('Población Beneficiada : ', { continued: true })
         .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
     doc.moveDown(1);
 
