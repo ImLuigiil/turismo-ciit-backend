@@ -50,15 +50,28 @@ export class ProyectoService {
   }
 
   async findOne(id: number): Promise<Proyecto> {
-    const proyecto = await this.proyectosRepository.findOne({
+    const project = await this.proyectosRepository.findOne({
       where: { idProyecto: id },
-      relations: ['comunidad', 'personasDirectorio', 'imagenes']
+      relations: [
+        'comunidad',
+        'imagenes',
+        'historialFases', // <-- ESTA LÍNEA DEBE ASEGURARSE DE ESTAR
+        'personasDirectorio'
+      ],
+      // Ordenar el historial por fase para la visualización cronológica
+      order: {
+        historialFases: {
+          faseNumero: 'ASC', 
+        },
+      },
     });
-    if (!proyecto) {
-      throw new NotFoundException(`Proyecto con ID ${id} no encontrado`);
+
+    if (!project) {
+      throw new NotFoundException(`Proyecto con ID ${id} no encontrado.`);
     }
-    return proyecto;
+    return project;
   }
+  
 
   async updateProjectWithImages(
     id: number,
