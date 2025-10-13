@@ -305,7 +305,7 @@ async generateGeneralReport(@Res() res: Response) {
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   doc.pipe(res);
 
-  const tecNMUrl = 'https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png';
+  const tecNMUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
   const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
 
   try {
@@ -475,7 +475,7 @@ async generateGeneralReport(@Res() res: Response) {
 
     doc.pipe(res);
 
-    const tecNMUrl = 'https://www.cdcuauhtemoc.tecnm.mx/wp-content/uploads/2021/08/Logo-TecNM.png';
+    const tecNMUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
     const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
 
     try {
