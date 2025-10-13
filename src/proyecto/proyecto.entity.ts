@@ -3,6 +3,7 @@ import { Entity, PrimaryGeneratedColumn, Column, OneToMany, ManyToOne, JoinColum
 import { PersonaProyecto } from '../persona-proyecto/persona-proyecto.entity';
 import { Comunidad } from '../comunidad/comunidad.entity';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
+import { HistorialFase } from '../historial-fase/historial-fase.entity';
 
 @Entity('proyecto')
 export class Proyecto {
@@ -51,4 +52,8 @@ export class Proyecto {
 
   @OneToMany(() => PersonaProyecto, persona => persona.proyecto, { cascade: true })
   personasDirectorio: PersonaProyecto[];
+    // --- CÓDIGO AÑADIDO: Relación con el Historial ---
+  @OneToMany(() => HistorialFase, historialFase => historialFase.proyecto)
+  historialFases: HistorialFase[];
+    // --- FIN CÓDIGO AÑADIDO ---
 }

@@ -6,6 +6,8 @@ import { Proyecto } from './proyecto.entity';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
 import { UpdateProyectoDto } from './dto/update-proyecto.dto';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
+import { HistorialFase } from '../historial-fase/historial-fase.entity';
+import { HistorialFaseService } from '../historial-fase/historial-fase.service';
 
 @Injectable()
 export class ProyectoService {
@@ -17,6 +19,9 @@ export class ProyectoService {
     private proyectosRepository: Repository<Proyecto>,
     @InjectRepository(ProyectoImagen)
     private proyectoImagenesRepository: Repository<ProyectoImagen>,
+    private historialFaseService: HistorialFaseService,
+    @InjectRepository(HistorialFase)
+    private historialFaseRepository: Repository<HistorialFase>,
   ) {}
 
   async createProjectWithImages(createProyectoDto: CreateProyectoDto, imagenesData: Partial<ProyectoImagen>[]): Promise<Proyecto> {
@@ -113,40 +118,58 @@ export class ProyectoService {
   }
 
   async getProjectReportData(id: number): Promise<Proyecto> {
-    const project = await this.findOne(id);
-    return project;
-  }
-
-  // --- NUEVO MÉTODO: Concluir Fase ---
-async concluirFase(
-    id: number,
-    justificacion: string,
-    documentoUrl: string | null
-  ): Promise<Proyecto> {
-    const project = await this.proyectosRepository.findOne({ where: { idProyecto: id } });
-
-    this.logger.log(`ConcluirFase: Intentando avanzar proyecto ID ${id}. Fase actual leída: ${project?.faseActual}`);
+    const project = await this.proyectosRepository.findOne({
+      where: { idProyecto: id },
+      relations: [
+        'comunidad',
+        'imagenes',
+        // --- CÓDIGO AÑADIDO/MODIFICADO ---
+        'historialFases', 
+        // --- FIN CÓDIGO AÑADIDO/MODIFICADO ---
+        'personasDirectorio'
+      ],
+      // Ordenar el historial por fase para que se vea cronológicamente
+      order: {
+        historialFases: {
+          fechaRegistro: 'ASC',
+        },
+      },
+    });
 
     if (!project) {
       throw new NotFoundException(`Proyecto con ID ${id} no encontrado.`);
     }
+    return project;
+  }
+  // --- NUEVO MÉTODO: Concluir Fase ---
+async concluirFase(
+    id: number, 
+    justificacion: string, 
+    documentoUrl: string | null
+  ): Promise<Proyecto> {
+    const proyecto = await this.proyectosRepository.findOne({ where: { idProyecto: id } });
 
-    // --- CORRECCIÓN CLAVE AQUÍ ---
-    // Asegurarse de que faseActual sea un número, si es null o undefined, se trata como 0 para la comparación.
-    const currentFase = project.faseActual ?? 0; 
-
-    if (currentFase >= 7) {
-      this.logger.warn(`ConcluirFase: Intento de avanzar proyecto ID ${id} fallido. Ya en fase ${currentFase}.`);
-      throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7) o superior.');
+    if (!proyecto) {
+      throw new NotFoundException(`Proyecto con ID ${id} no encontrado.`);
     }
-    // --- FIN CORRECCIÓN ---
 
-    project.faseActual = currentFase + 1; // Incrementa la fase desde el valor seguro
-    project.justificacionFase = justificacion;
-    project.justificacionDocumentoUrl = documentoUrl;
+    const nextFase = (proyecto.faseActual ?? 1) + 1;
 
-    const savedProject = await this.proyectosRepository.save(project);
-    this.logger.log(`ConcluirFase: Proyecto ID ${id} avanzado a fase ${savedProject.faseActual}.`);
-    return savedProject;
+    if (nextFase > 7) {
+      throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7).');
+    }
+    
+    // 1. Crear el registro en la nueva tabla de historial
+    await this.historialFaseService.create({
+      proyectoIdProyecto: id,
+      faseNumero: proyecto.faseActual,
+      justificacion: justificacion,
+      documentoUrl: documentoUrl,
+    });
+
+    // 2. Actualizar el proyecto principal con la nueva fase
+    proyecto.faseActual = nextFase;
+    
+    return this.proyectosRepository.save(proyecto);
   }
 }
