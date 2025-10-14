@@ -141,7 +141,8 @@ const downloadLogos = async () => {
         return logoBuffers;
     } catch (error) {
         console.error('Error al descargar uno o más logos para el reporte:', error.message);
-        throw new Error('No se pudieron descargar los logos requeridos.');
+        // Si hay un error, no lanzamos excepción, solo devolvemos un objeto vacío para no romper el PDF.
+        return {}; 
     }
 };
 
@@ -157,6 +158,7 @@ const addHeader = async (doc: PDFKit.PDFDocument) => {
     const logoY = startY + 5; 
     
     // Se ajusta el margen superior para el contenido, dejando espacio para el encabezado
+    // ESTO ES CLAVE PARA QUE EL CONTENIDO NUNCA CHOQUE
     doc.page.margins.top = margin + headerHeight; 
 
     try {
@@ -164,7 +166,9 @@ const addHeader = async (doc: PDFKit.PDFDocument) => {
 
         // 1. Logo SEP (Izquierda)
         let currentX = margin;
-        doc.image(logos.sep, currentX, logoY, { width: logoSepWidth });
+        if (logos.sep) {
+            doc.image(logos.sep, currentX, logoY, { width: logoSepWidth });
+        }
 
         // 2. Línea Vertical Amarilla
         currentX += logoSepWidth + spaceBetweenLogos;
@@ -178,38 +182,76 @@ const addHeader = async (doc: PDFKit.PDFDocument) => {
            
         // 3. Logo TecNM (Junto a la línea vertical)
         currentX += spaceBetweenLogos;
-        doc.image(logos.tecnm, currentX, logoY, { width: logoTecNMWidth });
-
-        // NOTA: Se eliminó la Línea Amarilla Horizontal por solicitud del usuario.
+        if (logos.tecnm) {
+            doc.image(logos.tecnm, currentX, logoY, { width: logoTecNMWidth });
+        }
 
         // Asegurar que el contenido comience después del encabezado (espacio de 90)
         doc.y = startY + headerHeight + 5;
 
     } catch (error) {
-        // En caso de error de descarga, solo dibuja una línea y texto
+        // En caso de error de descarga, solo dibuja un marcador
         doc.fontSize(10).fillColor('#888888').text('Error al cargar logos de Encabezado', margin, startY + 10);
-        // Dibuja una línea de referencia para el borde inferior del encabezado si fallan los logos
-        doc.moveTo(margin, startY + headerHeight - 5).lineTo(doc.page.width - margin, startY + headerHeight - 5).strokeColor('#000000').lineWidth(0.5).stroke();
         doc.y = startY + headerHeight + 5;
     }
 };
 
+const addFooter = async (doc: PDFKit.PDFDocument) => { 
+    const margin = 50;
+    const logoMujerIndigenaWidth = 40;
+    
+    // Altura del footer (aproximadamente 70pts de contenido + 5pts de línea roja)
+    const footerHeight = 75; 
+    
+    // Se ajusta el margen inferior para el contenido, dejando espacio para el pie de página
+    // ESTO ES CLAVE PARA QUE EL CONTENIDO NUNCA CHOQUE
+    doc.page.margins.bottom = footerHeight + 10; 
 
+    // Posición donde debe ir el contenido del footer (encima de la línea roja)
+    const contentY = doc.page.height - doc.page.margins.bottom + 15; 
+    const textAddress = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
-// Función para agregar encabezado y pie a cada página (la lógica se mantiene)
-const addHeaderAndFooterToAllPages = async (doc: PDFKit.PDFDocument, callback: () => void) => {
-    const numPages = doc.bufferedPageRange().count;
-    for (let i = 0; i < numPages; i++) {
-        doc.switchToPage(i);
-        await addHeader(doc);
-        // Este bloque ya no es necesario si usamos doc.on('pageAdded'), pero lo mantengo
-        // por si se usó originalmente en algún otro contexto
-        if (i < numPages - 1) {
-             doc.y = doc.page.margins.top;
+    // 1. Línea Roja (Abajo de la dirección, marcando el fin del contenido del footer)
+    // Usamos el punto final del margen de página (50 del bottom) para ubicar la línea.
+    const redLineY = doc.page.height - 50; 
+    doc.save()
+        .moveTo(margin, redLineY)
+        .lineTo(doc.page.width - margin, redLineY)
+        .strokeColor('#C50E18') // Rojo Institucional
+        .lineWidth(1)
+        .stroke()
+        .restore();
+
+    // 2. Logo 2025 Año de la Mujer Indígena (Izquierda)
+    try {
+        const logos = await downloadLogos();
+        const logoX = margin;
+
+        // La posición Y del logo debe estar ANTES de la línea roja, pero centrada verticalmente con el texto.
+        // Usamos contentY como referencia.
+        const logoY = contentY; 
+
+        if (logos.mujerIndigena) {
+            doc.image(logos.mujerIndigena, logoX, logoY, { width: logoMujerIndigenaWidth });
         }
+
+        // 3. Dirección y contacto (A la derecha del logo)
+        const textX = logoX + logoMujerIndigenaWidth + 10;
+        const textY = logoY; 
+        doc.fontSize(8).fillColor('#555555').font('Helvetica');
+        
+        doc.text(textAddress, textX, textY, {
+            width: doc.page.width - textX - margin,
+            align: 'left',
+            lineGap: 1 // Espaciado entre líneas
+        });
+
+    } catch (error) {
+        doc.fontSize(8).fillColor('#888888').text('Error al cargar logos de Pie de Página', margin, contentY);
+        doc.fontSize(8).fillColor('#555555').font('Helvetica').text(textAddress, margin + 50, contentY + 10);
     }
-    callback(); 
 };
+
 // =====================================================================================
 // FIN de Nuevas funciones para Encabezado y Pie de Página
 // =====================================================================================
@@ -413,9 +455,10 @@ async generateGeneralReport(@Res() res: Response) {
   doc.addPage();
   
   // 2. Definir callback para encabezado/pie en cada página
+  // Usamos doc.on('pageAdded') para agregar el encabezado/pie automáticamente en cada nueva página
   doc.on('pageAdded', async () => {
     await addHeader(doc);
-    doc.y = 110; // Posición de inicio del contenido
+    // Nota: El pie de página se debe manejar en el evento 'beforeEnd' o al final del flujo principal, no aquí.
   });
 
   // Asegurarse de que el encabezado/pie esté en la primera página
@@ -441,7 +484,7 @@ async generateGeneralReport(@Res() res: Response) {
       const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
 
       // Comprobar si hay espacio para el siguiente proyecto
-      if (doc.y > doc.page.height - 150) { // Dejar espacio para pie y un nuevo item
+      if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { // Usamos el margen inferior para el cálculo
         doc.addPage();
       }
 
@@ -495,7 +538,7 @@ async generateGeneralReport(@Res() res: Response) {
   }
 
   // Comprobar si hay espacio suficiente para la gráfica y la leyenda
-  if (doc.y > doc.page.height - 200) { 
+  if (doc.y > doc.page.height - doc.page.margins.bottom - 150) { 
     doc.addPage();
   }
   
@@ -516,58 +559,73 @@ async generateGeneralReport(@Res() res: Response) {
 
   const totalProjects = proyectos.length;
   
-  const chartRadius = 50;
-  const chartCenterX = 100;
-  const chartCenterY = doc.y + chartRadius + 10;
-  let currentAngle = 0;
+  // VERIFICACIÓN CLAVE PARA EL ERROR: Si no hay proyectos, totalProjects es 0.
+  // Esto causa divisiones por cero o valores NaN/Infinity en drawSlice.
+  if (totalProjects > 0) { 
 
-  const drawSlice = (color: string, count: number) => {
-      if (count === 0) return;
-      const sliceAngle = (count / totalProjects) * 360;
-      const startAngle = currentAngle;
-      const endAngle = currentAngle + sliceAngle;
-      
-      // Dibujar la rebanada del pastel
-      doc.save()
-          .fill(color)
-          .moveTo(chartCenterX, chartCenterY)
-          .path(`M ${chartCenterX} ${chartCenterY} 
-                 L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} 
-                 A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
-          .fill(color)
-           .restore();
+        const chartRadius = 50;
+        const chartCenterX = 100;
+        const chartCenterY = doc.y + chartRadius + 10;
+        let currentAngle = 0;
 
-      currentAngle += sliceAngle;
-  };
+        const drawSlice = (color: string, count: number) => {
+            if (count === 0) return;
+            const sliceAngle = (count / totalProjects) * 360;
+            const startAngle = currentAngle;
+            const endAngle = currentAngle + sliceAngle;
+          
+            // Dibujar la rebanada del pastel
+            doc.save()
+                .fill(color)
+                .moveTo(chartCenterX, chartCenterY)
+                // Usar Math.sin() y Math.cos() de forma segura. El error "unsupported number: undefined" 
+                // se da si alguna de estas coordenadas es NaN o Infinity, pero si totalProjects > 0, esto es seguro.
+                .path(`M ${chartCenterX} ${chartCenterY} 
+                         L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} 
+                         A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
+                .fill(color)
+               .restore();
 
-  drawSlice('#28a745', greenCount);
-  drawSlice('#ffc107', yellowCount);
-  drawSlice('#dc3545', redCount);
-  drawSlice('#6c757d', greyCount);
-  
-  const legendX = chartCenterX + chartRadius + 20;
-  const legendY = chartCenterY - chartRadius + 10;
-  const legendSpacing = 15;
-  
-  doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
-  doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
+            currentAngle += sliceAngle;
+        };
 
-  if (greenCount > 0) {
-      doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
-  }
-  if (yellowCount > 0) {
-      doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
-  }
-  if (redCount > 0) {
-      doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
-  }
-  if (greyCount > 0) {
-      doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
-  }
-  
-  doc.moveDown(6);
+        drawSlice('#28a745', greenCount);
+        drawSlice('#ffc107', yellowCount);
+        drawSlice('#dc3545', redCount);
+        drawSlice('#6c757d', greyCount);
+        
+        const legendX = chartCenterX + chartRadius + 20;
+        const legendY = chartCenterY - chartRadius + 10;
+        const legendSpacing = 15;
+        
+        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
+        doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
 
-  // Agregar pie de página a la última página antes de finalizar
+        if (greenCount > 0) {
+            doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
+        }
+        if (yellowCount > 0) {
+            doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
+        }
+        if (redCount > 0) {
+            doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
+        }
+        if (greyCount > 0) {
+            doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
+        }
+    } else {
+         doc.fontSize(12).text('No hay datos suficientes para generar la gráfica de avance.', 50, doc.y);
+    }
+    
+    doc.moveDown(6);
+
+    // FIX para 'write after end': Llamamos a addFooter en todas las páginas ANTES de doc.end()
+    const numPages = doc.bufferedPageRange().count;
+    for (let i = 0; i < numPages; i++) {
+        doc.switchToPage(i);
+        await addFooter(doc);
+    }
+    doc.switchToPage(numPages - 1); // Vuelve a la última página para que doc.end() funcione correctamente
 
   doc.end();
 }
@@ -596,13 +654,13 @@ async generateGeneralReport(@Res() res: Response) {
     // Agregar la primera página (y se llama addHeader/addFooter en on('pageAdded'))
     doc.addPage();
 
-    // 2. Definir callback para encabezado/pie en cada página
+    // 2. Definir callback para encabezado en cada nueva página
     doc.on('pageAdded', async () => {
       await addHeader(doc);
       doc.y = 110; // Posición de inicio del contenido
     });
     
-    // Asegurarse de que el encabezado/pie esté en la primera página
+    // Asegurarse de que el encabezado esté en la primera página
     await addHeader(doc);
 
     // Iniciar el contenido principal
@@ -659,7 +717,7 @@ async generateGeneralReport(@Res() res: Response) {
     doc.moveDown(1);
 
     // Salto de página si el siguiente bloque no cabe
-    if (doc.y > doc.page.height - 200) { 
+    if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { 
         doc.addPage();
     }
 
@@ -671,7 +729,7 @@ async generateGeneralReport(@Res() res: Response) {
     }
     
     // Salto de página si el siguiente bloque no cabe
-    if (doc.y > doc.page.height - 200) { 
+    if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { 
         doc.addPage();
     }
 
@@ -680,7 +738,7 @@ async generateGeneralReport(@Res() res: Response) {
     if (project.personasDirectorio && project.personasDirectorio.length > 0) {
       project.personasDirectorio.forEach(persona => {
         // Comprobar espacio para la persona
-        if (doc.y > doc.page.height - 150) { 
+        if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { 
           doc.addPage();
         }
 
@@ -702,7 +760,7 @@ async generateGeneralReport(@Res() res: Response) {
         doc.moveDown(1);
       });
     } else {
-      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas 1.');
+      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
       doc.moveDown(1);
     }
 
@@ -716,7 +774,7 @@ async generateGeneralReport(@Res() res: Response) {
 
         if (fs.existsSync(fullImagePath)) {
           // Comprobar espacio para la imagen (estimando un espacio grande)
-          if (doc.y > doc.page.height - 350) { 
+          if (doc.y > doc.page.height - doc.page.margins.bottom - 350) { 
             doc.addPage();
           }
 
@@ -733,7 +791,15 @@ async generateGeneralReport(@Res() res: Response) {
     } else {
       doc.moveDown(1);
     }
-  
+
+    // FIX para 'write after end': Llamamos a addFooter en todas las páginas ANTES de doc.end()
+    const numPages = doc.bufferedPageRange().count;
+    for (let i = 0; i < numPages; i++) {
+        doc.switchToPage(i);
+        await addFooter(doc);
+    }
+    doc.switchToPage(numPages - 1); // Vuelve a la última página
+
     doc.end();
   }
 }
