@@ -1,3 +1,4 @@
+
 import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile, NotFoundException } from '@nestjs/common';
 import { ProyectoService } from './proyecto.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
@@ -7,7 +8,7 @@ import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
-import * as PDFDocument from 'pdfkit'; // Revertido a la importación original
+import * as PDFDocument from 'pdfkit';
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
@@ -15,457 +16,315 @@ import { Proyecto } from './proyecto.entity';
 
 
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
-  if (!fechaInicio || !fechaFinAprox) {
-    return [];
-  }
-  const startDate = new Date(fechaInicio);
-  const endDate = new Date(fechaFinAprox);
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
-    return [];
-  }
-  const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-  const timeForFirstThreePhases = totalDurationDays * 0.75;
-  const daysPerEarlyPhase = timeForFirstThreePhases / 3;
-  const timeForLastFourPhases = totalDurationDays * 0.25;
-  const daysPerLatePhase = timeForLastFourPhases / 4;
-  const phaseEndDates: Date[] = [];
-  let cumulativeDays = 0;
-  for (let i = 0; i < 3; i++) {
-    cumulativeDays += daysPerEarlyPhase;
-    const phaseEndDate = new Date(startDate);
-    phaseEndDate.setDate(startDate.getDate() + cumulativeDays);
-    phaseEndDates.push(phaseEndDate);
-  }
-  for (let i = 0; i < 4; i++) {
-    cumulativeDays += daysPerLatePhase;
-    const phaseEndDate = new Date(startDate);
-    phaseEndDate.setDate(startDate.getDate() + Math.round(cumulativeDays));
-    phaseEndDates.push(phaseEndDate);
-  }
-  return phaseEndDates;
+  if (!fechaInicio || !fechaFinAprox) {
+    return [];
+  }
+  const startDate = new Date(fechaInicio);
+  const endDate = new Date(fechaFinAprox);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
+    return [];
+  }
+  const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  const timeForFirstThreePhases = totalDurationDays * 0.75;
+  const daysPerEarlyPhase = timeForFirstThreePhases / 3;
+  const timeForLastFourPhases = totalDurationDays * 0.25;
+  const daysPerLatePhase = timeForLastFourPhases / 4;
+  const phaseEndDates: Date[] = [];
+  let cumulativeDays = 0;
+  for (let i = 0; i < 3; i++) {
+    cumulativeDays += daysPerEarlyPhase;
+    const phaseEndDate = new Date(startDate);
+    phaseEndDate.setDate(startDate.getDate() + cumulativeDays);
+    phaseEndDates.push(phaseEndDate);
+  }
+  for (let i = 0; i < 4; i++) {
+    cumulativeDays += daysPerLatePhase;
+    const phaseEndDate = new Date(startDate);
+    phaseEndDate.setDate(startDate.getDate() + Math.round(cumulativeDays));
+    phaseEndDates.push(phaseEndDate);
+  }
+  return phaseEndDates;
 };
 
 const calculateTimeBasedProgress = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
-  if (!fechaInicio || !fechaFinAprox) return 0;
-  const startDate = new Date(fechaInicio);
-  const endDate = new Date(fechaFinAprox);
-  const currentDate = new Date();
-  if (currentDate < startDate) return 0;
-  if (currentDate > endDate) return 100;
-  const totalDuration = endDate.getTime() - startDate.getTime();
-  const elapsedDuration = currentDate.getTime() - startDate.getTime();
-  if (totalDuration <= 0) return 100;
-  return (elapsedDuration / totalDuration) * 100;
+  if (!fechaInicio || !fechaFinAprox) return 0;
+  const startDate = new Date(fechaInicio);
+  const endDate = new Date(fechaFinAprox);
+  const currentDate = new Date();
+  if (currentDate < startDate) return 0;
+  if (currentDate > endDate) return 100;
+  const totalDuration = endDate.getTime() - startDate.getTime();
+  const elapsedDuration = currentDate.getTime() - startDate.getTime();
+  if (totalDuration <= 0) return 100;
+  return (elapsedDuration / totalDuration) * 100;
 };
 
 const calcularAvance = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null) => {
-    if (!fechaInicio || !fechaFinAprox || faseActual === null) return 0;
-    if (faseActual === 7) {
-      return 100;
-    }
-    const getPhaseProgress = (fase: number) => {
-        if (fase <= 1) return 0;
-        const progressMap = { 2: 25, 3: 50, 4: 75, 5: 81.25, 6: 87.5, 7: 100 };
-        return progressMap[fase] || 0;
-    };
-    const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
-    const phaseTargetPercentage = getPhaseProgress(faseActual);
-    const endDate = new Date(fechaFinAprox);
-    const currentDate = new Date();
-    if (currentDate > endDate && faseActual < 7) {
-        return Math.min(100, Math.max(0, Math.round(phaseTargetPercentage)));
-    }
-    let finalPercentage = Math.max(timeBasedPercentage, phaseTargetPercentage);
-    return Math.min(100, Math.max(0, Math.round(finalPercentage)));
+    if (!fechaInicio || !fechaFinAprox || faseActual === null) return 0;
+    if ((faseActual ?? 0) >= 7) {
+        return 100;
+    }
+    const getPhaseProgress = (fase: number) => {
+        if (fase <= 1) return 0;
+        const progressMap = { 2: 25, 3: 50, 4: 75, 5: 81.25, 6: 87.5, 7: 100 };
+        return progressMap[fase] || 0;
+    };
+    const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
+    const phaseTargetPercentage = getPhaseProgress(faseActual);
+    const endDate = new Date(fechaFinAprox);
+    const currentDate = new Date();
+    if (currentDate > endDate && faseActual < 7) {
+        return Math.min(100, Math.max(0, Math.round(phaseTargetPercentage)));
+    }
+    let finalPercentage = Math.max(timeBasedPercentage, phaseTargetPercentage);
+    return Math.min(100, Math.max(0, Math.round(finalPercentage)));
 };
 
 const getProgressColor = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null) => {
-  if (!fechaInicio || !fechaFinAprox || faseActual === null || faseActual < 1) {
-    return '#28a745';
-  }
-  if (faseActual === 7) {
-    return '#28a745';
-  }
-  const currentDate = new Date();
-  const endDate = new Date(fechaFinAprox);
-  if (currentDate > endDate) {
-    return '#dc3545';
-  }
-  const schedule = getPhaseSchedule(fechaInicio, fechaFinAprox);
-  if (schedule.length === 0) {
-    return '#28a745';
-  }
-  const expectedEndDateForCurrentPhase = schedule[faseActual - 1];
-  const timeDifference = currentDate.getTime() - expectedEndDateForCurrentPhase.getTime();
-  const daysBehind = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-  if (daysBehind <= 0) {
-    return '#28a745';
-  }
-  if (daysBehind >= 5) {
-    return '#dc3545';
-  }
-  if (daysBehind >= 1 && daysBehind <= 4) {
-    return '#ffc107';
-  }
-  return '#28a745';
+  if (!fechaInicio || !fechaFinAprox || faseActual === null || faseActual < 1) {
+    return '#28a745';
+  }
+  if (faseActual === 7) {
+    return '#28a745';
+  }
+  const currentDate = new Date();
+  const endDate = new Date(fechaFinAprox);
+  if (currentDate > endDate) {
+    return '#dc3545';
+  }
+  const schedule = getPhaseSchedule(fechaInicio, fechaFinAprox);
+  if (schedule.length === 0) {
+    return '#28a745';
+  }
+  const expectedEndDateForCurrentPhase = schedule[faseActual - 1];
+  const timeDifference = currentDate.getTime() - expectedEndDateForCurrentPhase.getTime();
+  const daysBehind = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+  if (daysBehind <= 0) {
+    return '#28a745';
+  }
+  if (daysBehind >= 5) {
+    return '#dc3545';
+  }
+  if (daysBehind >= 1 && daysBehind <= 4) {
+    return '#ffc107';
+  }
+  return '#28a745';
 };
-
-// =====================================================================================
-// Nuevas funciones para Encabezado y Pie de Página
-// =====================================================================================
-
-// Caching de buffers de imágenes para evitar descargas repetidas
-let logoBuffers: { [key: string]: Buffer } = {};
-
-const downloadLogos = async () => {
-    const logos = {
-        sep: 'https://www.gob.mx/cms/uploads/action_program/main_image/3180/post_logo_educ.jpg',
-        tecnm: 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/500px-Tecnologico_Nacional_de_Mexico.svg.png',
-        mujerIndigena: 'https://heraldodemexico.com.mx/u/fotografias/m/2024/12/23/f848x477-1061399_1119202_3446.jpg'
-    };
-
-    if (Object.keys(logoBuffers).length === 3) {
-        return logoBuffers; // Ya descargados
-    }
-
-    try {
-        const responses = await Promise.all(
-            Object.entries(logos).map(([key, url]) =>
-                axios.get(url, { responseType: 'arraybuffer' }).then(response => ({ key, buffer: Buffer.from(response.data) }))
-            )
-        );
-
-        responses.forEach(({ key, buffer }) => {
-            logoBuffers[key] = buffer;
-        });
-        return logoBuffers;
-    } catch (error) {
-        console.error('Error al descargar uno o más logos para el reporte:', error.message);
-        // Si hay un error, no lanzamos excepción, solo devolvemos un objeto vacío para no romper el PDF.
-        return {}; 
-    }
-};
-
-const addHeader = async (doc: PDFKit.PDFDocument) => { 
-    const margin = 50;
-    const headerHeight = 90; // Altura que ocupará el header
-    const logoSepWidth = 60;
-    const logoTecNMWidth = 80;
-    const spaceBetweenLogos = 10;
-    
-    // Posición Y de la parte superior del encabezado
-    const startY = 20;
-    const logoY = startY + 5; 
-    
-    // Se ajusta el margen superior para el contenido, dejando espacio para el encabezado
-    // ESTO ES CLAVE PARA QUE EL CONTENIDO NUNCA CHOQUE
-    doc.page.margins.top = margin + headerHeight; 
-
-    try {
-        const logos = await downloadLogos();
-
-        // 1. Logo SEP (Izquierda)
-        let currentX = margin;
-        if (logos.sep) {
-            doc.image(logos.sep, currentX, logoY, { width: logoSepWidth });
-        }
-
-        // 2. Línea Vertical Amarilla
-        currentX += logoSepWidth + spaceBetweenLogos;
-        doc.save()
-           .moveTo(currentX, logoY + 5) // Inicia un poco abajo
-           .lineTo(currentX, logoY + logoSepWidth - 5) // Termina un poco arriba
-           .strokeColor('#FFC300') // Amarillo Institucional
-           .lineWidth(1)
-           .stroke()
-           .restore();
-           
-        // 3. Logo TecNM (Junto a la línea vertical)
-        currentX += spaceBetweenLogos;
-        if (logos.tecnm) {
-            doc.image(logos.tecnm, currentX, logoY, { width: logoTecNMWidth });
-        }
-
-        // Asegurar que el contenido comience después del encabezado (espacio de 90)
-        doc.y = startY + headerHeight + 5;
-
-    } catch (error) {
-        // En caso de error de descarga, solo dibuja un marcador
-        doc.fontSize(10).fillColor('#888888').text('Error al cargar logos de Encabezado', margin, startY + 10);
-        doc.y = startY + headerHeight + 5;
-    }
-};
-
-const addFooter = async (doc: PDFKit.PDFDocument) => { 
-    const margin = 50;
-    const logoMujerIndigenaWidth = 40;
-    
-    // Altura del footer (aproximadamente 70pts de contenido + 5pts de línea roja)
-    const footerHeight = 75; 
-    
-    // Se ajusta el margen inferior para el contenido, dejando espacio para el pie de página
-    // ESTO ES CLAVE PARA QUE EL CONTENIDO NUNCA CHOQUE
-    doc.page.margins.bottom = footerHeight + 10; 
-
-    // Posición donde debe ir el contenido del footer (encima de la línea roja)
-    const contentY = doc.page.height - doc.page.margins.bottom + 15; 
-    const textAddress = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
-
-    // 1. Línea Roja (Abajo de la dirección, marcando el fin del contenido del footer)
-    // Usamos el punto final del margen de página (50 del bottom) para ubicar la línea.
-    const redLineY = doc.page.height - 50; 
-    doc.save()
-        .moveTo(margin, redLineY)
-        .lineTo(doc.page.width - margin, redLineY)
-        .strokeColor('#C50E18') // Rojo Institucional
-        .lineWidth(1)
-        .stroke()
-        .restore();
-
-    // 2. Logo 2025 Año de la Mujer Indígena (Izquierda)
-    try {
-        const logos = await downloadLogos();
-        const logoX = margin;
-
-        // La posición Y del logo debe estar ANTES de la línea roja, pero centrada verticalmente con el texto.
-        // Usamos contentY como referencia.
-        const logoY = contentY; 
-
-        if (logos.mujerIndigena) {
-            doc.image(logos.mujerIndigena, logoX, logoY, { width: logoMujerIndigenaWidth });
-        }
-
-        // 3. Dirección y contacto (A la derecha del logo)
-        const textX = logoX + logoMujerIndigenaWidth + 10;
-        const textY = logoY; 
-        doc.fontSize(8).fillColor('#555555').font('Helvetica');
-        
-        doc.text(textAddress, textX, textY, {
-            width: doc.page.width - textX - margin,
-            align: 'left',
-            lineGap: 1 // Espaciado entre líneas
-        });
-
-    } catch (error) {
-        doc.fontSize(8).fillColor('#888888').text('Error al cargar logos de Pie de Página', margin, contentY);
-        doc.fontSize(8).fillColor('#555555').font('Helvetica').text(textAddress, margin + 50, contentY + 10);
-    }
-};
-
-// =====================================================================================
-// FIN de Nuevas funciones para Encabezado y Pie de Página
-// =====================================================================================
 
 
 @Controller('proyectos')
 export class ProyectoController {
-  constructor(private readonly proyectoService: ProyectoService) {}
+  constructor(private readonly proyectoService: ProyectoService) {}
 
-  @Get()
-  findAll() {
-    return this.proyectoService.findAll();
-  }
+  @Get()
+  findAll() {
+    return this.proyectoService.findAll();
+  }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.proyectoService.findOne(+id);
-  }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.proyectoService.findOne(+id);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FilesInterceptor('images', 15, {
-      storage: diskStorage({
-        destination: './uploads/proyectos',
-        filename: (req, file, cb) => {
-          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: 1024 * 1024 * 5
-      }
-    })
-  )
-  async create(
-    @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: any,
-  ) {
-    const createProyectoDto: CreateProyectoDto = {
-      nombre: body.nombre,
-      descripcion: body.descripcion,
-      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
-      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
-      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
-      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
-      faseActual: body.faseActual ? Number(body.faseActual) : null,
-      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
-      justificacionFase: body.justificacionFase || null,
-    };
+  @UseGuards(AuthGuard('jwt'))
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FilesInterceptor('images', 15, {
+      storage: diskStorage({
+        destination: './uploads/proyectos',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 5
+      }
+    })
+  )
+  async create(
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() body: any,
+  ) {
+    const createProyectoDto: CreateProyectoDto = {
+      nombre: body.nombre,
+      descripcion: body.descripcion,
+      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
+      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
+      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
+      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
+      faseActual: body.faseActual ? Number(body.faseActual) : null,
+      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
+      justificacionFase: body.justificacionFase || null,
+    };
 
-    if (!files || files.length === 0) {
-      throw new BadRequestException('Se requiere al menos una imagen para el proyecto.');
-    }
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Se requiere al menos una imagen para el proyecto.');
+    }
 
-    const imagenes = files.map(fileItem => ({
-      url: `/uploads/proyectos/${fileItem.filename}`,
-      esPrincipal: 0,
-      orden: 0,
-    }));
+    const imagenes = files.map(fileItem => ({
+      url: `/uploads/proyectos/${fileItem.filename}`,
+      esPrincipal: 0,
+      orden: 0,
+    }));
 
-    return this.proyectoService.createProjectWithImages(createProyectoDto, imagenes);
-  }
+    return this.proyectoService.createProjectWithImages(createProyectoDto, imagenes);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Put(':id')
-  @UseInterceptors(
-    FilesInterceptor('images', 15, {
-      storage: diskStorage({
-        destination: './uploads/proyectos',
-        filename: (req, file, cb) => {
-          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: 1024 * 1024 * 5
-      }
-    })
-  )
-  async update(
-    @Param('id') id: string,
-    @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: any,
-  ) {
-    const updateProyectoDto: UpdateProyectoDto = {
-      nombre: body.nombre,
-      descripcion: body.descripcion,
-      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
-      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
-      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
-      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
-      faseActual: body.faseActual ? Number(body.faseActual) : null,
-      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
-      justificacionFase: body.justificacionFase || null,
-    };
+  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  @UseInterceptors(
+    FilesInterceptor('images', 15, {
+      storage: diskStorage({
+        destination: './uploads/proyectos',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 5
+      }
+    })
+  )
+  async update(
+    @Param('id') id: string,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() body: any,
+  ) {
+    const updateProyectoDto: UpdateProyectoDto = {
+      nombre: body.nombre,
+      descripcion: body.descripcion,
+      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
+      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
+      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
+      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
+      faseActual: body.faseActual ? Number(body.faseActual) : null,
+      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
+      justificacionFase: body.justificacionFase || null,
+    };
 
-    const imagesToDeleteIds: number[] = body.imagesToDeleteIds ? JSON.parse(body.imagesToDeleteIds) : [];
-    const imagesToUpdateData: Partial<ProyectoImagen>[] = body.imagesToUpdateData ? JSON.parse(body.imagesToUpdateData) : [];
+    const imagesToDeleteIds: number[] = body.imagesToDeleteIds ? JSON.parse(body.imagesToDeleteIds) : [];
+    const imagesToUpdateData: Partial<ProyectoImagen>[] = body.imagesToUpdateData ? JSON.parse(body.imagesToUpdateData) : [];
 
-    const newImages = files.map(fileItem => ({
-      url: `/uploads/proyectos/${fileItem.filename}`,
-      esPrincipal: 0,
-      orden: 0,
-    }));
+    const newImages = files.map(fileItem => ({
+      url: `/uploads/proyectos/${fileItem.filename}`,
+      esPrincipal: 0,
+      orden: 0,
+    }));
 
-    return this.proyectoService.updateProjectWithImages(+id, updateProyectoDto, newImages, imagesToDeleteIds, imagesToUpdateData);
-  }
+    return this.proyectoService.updateProjectWithImages(+id, updateProyectoDto, newImages, imagesToDeleteIds, imagesToUpdateData);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string) {
-    const proyectoId = +id;
-    
-    // 1. Obtener el proyecto
-    const proyecto = await this.proyectoService.findOne(proyectoId);
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string) {
+    const proyectoId = +id;
+    
+    // 1. Obtener el proyecto
+    const proyecto = await this.proyectoService.findOne(proyectoId);
 
-    if (!proyecto) {
-        throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado.`);
-    }
+    if (!proyecto) {
+        throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado.`);
+    }
 
-    // 2. Validación de Fase antes de Eliminar
-    // Usamos el operador de coalescencia nula (??) para asegurar que si faseActual es null/undefined,
-    // se trate como 1 para la validación.
-    const faseActualSegura = proyecto.faseActual ?? 1; // Asume Fase 1 si es null/undefined
+    // 2. Validación de Fase antes de Eliminar
+    // Usamos el operador de coalescencia nula (??) para asegurar que si faseActual es null/undefined,
+    // se trate como 1 para la validación.
+    const faseActualSegura = proyecto.faseActual ?? 1; // Asume Fase 1 si es null/undefined
 
-    if (faseActualSegura > 1) {
-        throw new BadRequestException('El proyecto no puede ser eliminado porque ya ha iniciado la Fase 2 o superior. Solo los proyectos en Fase 1 pueden ser borrados.');
-    }
-    
-    return this.proyectoService.remove(proyectoId);
-  }
+    if (faseActualSegura > 1) {
+        throw new BadRequestException('El proyecto no puede ser eliminado porque ya ha iniciado la Fase 2 o superior. Solo los proyectos en Fase 1 pueden ser borrados.');
+    }
+    
+    return this.proyectoService.remove(proyectoId);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Patch(':id/concluir-fase')
-  @UseInterceptors(
-    FileInterceptor('documento', {
-      storage: diskStorage({
-        destination: './uploads/documentos_justificacion',
-        filename: (req, file, cb) => {
-          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(pdf)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos PDF como documento de justificación!'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: 1024 * 1024 * 10
-      }
-    })
-  )
-  async concluirFase(
-    @Param('id') id: string,
-    @UploadedFile() documento: Express.Multer.File,
-    @Body('justificacion') justificacion: string,
-  ) {
-    if (!justificacion || justificacion.trim() === '') {
-      throw new BadRequestException('La justificación es obligatoria para avanzar de fase.');
-    }
-    if (!documento) {
-      throw new BadRequestException('Se requiere un documento PDF que avale el cambio de fase.');
-    }
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id/concluir-fase')
+  @UseInterceptors(
+    FileInterceptor('documento', {
+      storage: diskStorage({
+        destination: './uploads/documentos_justificacion',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(pdf)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos PDF como documento de justificación!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 10
+      }
+    })
+  )
+  async concluirFase(
+    @Param('id') id: string,
+    @UploadedFile() documento: Express.Multer.File,
+    @Body('justificacion') justificacion: string,
+  ) {
+    if (!justificacion || justificacion.trim() === '') {
+      throw new BadRequestException('La justificación es obligatoria para avanzar de fase.');
+    }
+    if (!documento) {
+      throw new BadRequestException('Se requiere un documento PDF que avale el cambio de fase.');
+    }
 
-    const documentoUrl = `/uploads/documentos_justificacion/${documento.filename}`;
-    
-    return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
-  }
+    const documentoUrl = `/uploads/documentos_justificacion/${documento.filename}`;
+    
+    return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
+  }
 
 @Get('report/general')
 @UseGuards(AuthGuard('jwt'))
 async generateGeneralReport(@Res() res: Response) {
   const proyectos = await this.proyectoService.findAll();
 
-  // 1. Configuración del documento
-  const doc = new PDFDocument({ autoFirstPage: false });
+  const doc = new PDFDocument();
   const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
 
   res.setHeader('Content-Type', 'application/pdf');
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   doc.pipe(res);
-  
-  // Agregar la primera página (y se llama addHeader/addFooter en on('pageAdded'))
-  doc.addPage();
-  
-  // 2. Definir callback para encabezado/pie en cada página
-  // Usamos doc.on('pageAdded') para agregar el encabezado/pie automáticamente en cada nueva página
-  doc.on('pageAdded', async () => {
-    await addHeader(doc);
-    // Nota: El pie de página se debe manejar en el evento 'beforeEnd' o al final del flujo principal, no aquí.
-  });
 
-  // Asegurarse de que el encabezado/pie esté en la primera página
-  await addHeader(doc);
-  
-  // Iniciar el contenido principal
-  doc.y = 110; // Reset Y después del encabezado
+  const tecNMUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
+  const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
+
+  try {
+    const [tecNMResponse, itoResponse] = await Promise.all([
+      axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
+      axios.get(itoUrl, { responseType: 'arraybuffer' })
+    ]);
+    const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
+    const itoImageBuffer = Buffer.from(itoResponse.data);
+
+    const logoWidth = 80;
+    doc.image(tecNMImageBuffer, 50, 50, { width: 170 });
+    doc.image(itoImageBuffer, doc.page.width - 50 - logoWidth, 50, { width: logoWidth });
+  } catch (error) {
+    console.error('Error al descargar los logos:', error.message);
+    doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
+  }
+
+  doc.moveDown(4);
   doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
   doc.moveDown(2);
   
@@ -482,11 +341,6 @@ async generateGeneralReport(@Res() res: Response) {
       const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1; 
       const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
       const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-
-      // Comprobar si hay espacio para el siguiente proyecto
-      if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { // Usamos el margen inferior para el cálculo
-        doc.addPage();
-      }
 
       const yPos = doc.y;
 
@@ -518,30 +372,17 @@ async generateGeneralReport(@Res() res: Response) {
       doc.rect(progressX, progressY, progressBarWidth, progressBarHeight).stroke('#e0e0e0');
       doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight).fill(color);
       
-      // Ajustar la posición del texto de avance para que no se salga
-      let textX;
-      if (avance < 15) { // Si el avance es muy pequeño, poner el texto afuera
-        textX = progressX + (avance / 100) * progressBarWidth + 5; 
-        doc.fillColor('#000000');
-      } else { // Si es suficiente, ponerlo dentro
-        textX = progressX + (avance / 100) * progressBarWidth - 15;
-        doc.fillColor('#FFFFFF'); // Blanco para mejor contraste dentro de la barra
-      }
+      const textX = progressX + (avance / 100) * progressBarWidth - 15;
       const textY = progressY + 2;
-      
-      doc.fontSize(8).text(`${avance}%`, textX, textY);
-      doc.fillColor('#000000'); // Restaurar color de texto por defecto
+      doc.fontSize(8).fillColor('#000000').text(`${avance}%`, textX, textY);
 
       doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
-      
+      if (doc.y > doc.page.height - 100) {
+        doc.addPage();
+        doc.y = 50; // Reset y for new page
+      }
     });
   }
-
-  // Comprobar si hay espacio suficiente para la gráfica y la leyenda
-  if (doc.y > doc.page.height - doc.page.margins.bottom - 150) { 
-    doc.addPage();
-  }
-  
   let greenCount = 0;
   let yellowCount = 0;
   let redCount = 0;
@@ -559,247 +400,211 @@ async generateGeneralReport(@Res() res: Response) {
 
   const totalProjects = proyectos.length;
   
-  // VERIFICACIÓN CLAVE PARA EL ERROR: Si no hay proyectos, totalProjects es 0.
-  // Esto causa divisiones por cero o valores NaN/Infinity en drawSlice.
-  if (totalProjects > 0) { 
+  const chartRadius = 50;
+  const chartCenterX = 100;
+  const chartCenterY = doc.y + chartRadius + 20;
+  let currentAngle = 0;
 
-        const chartRadius = 50;
-        const chartCenterX = 100;
-        const chartCenterY = doc.y + chartRadius + 10;
-        let currentAngle = 0;
+  const drawSlice = (color: string, count: number) => {
+      if (count === 0) return;
+      const sliceAngle = (count / totalProjects) * 360;
+      const startAngle = currentAngle;
+      const endAngle = currentAngle + sliceAngle;
 
-        const drawSlice = (color: string, count: number) => {
-            if (count === 0) return;
-            const sliceAngle = (count / totalProjects) * 360;
-            const startAngle = currentAngle;
-            const endAngle = currentAngle + sliceAngle;
-          
-            // Dibujar la rebanada del pastel
-            doc.save()
-                .fill(color)
-                .moveTo(chartCenterX, chartCenterY)
-                // Usar Math.sin() y Math.cos() de forma segura. El error "unsupported number: undefined" 
-                // se da si alguna de estas coordenadas es NaN o Infinity, pero si totalProjects > 0, esto es seguro.
-                .path(`M ${chartCenterX} ${chartCenterY} 
-                         L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} 
-                         A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
-                .fill(color)
-               .restore();
+      doc.save()
+          .fill(color)
+          .moveTo(chartCenterX, chartCenterY)
+          .lineTo(
+              chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180),
+              chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)
+          )
+          .path(`M ${chartCenterX} ${chartCenterY} L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
+          .fill(color);
+      
+      currentAngle += sliceAngle;
+      doc.restore();
+  };
 
-            currentAngle += sliceAngle;
-        };
+  drawSlice('#28a745', greenCount);
+  drawSlice('#ffc107', yellowCount);
+  drawSlice('#dc3545', redCount);
+  drawSlice('#6c757d', greyCount);
+  
+  const legendX = chartCenterX + chartRadius + 20;
+  const legendY = chartCenterY - chartRadius + 10;
+  const legendSpacing = 15;
+  
+  doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
+  doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
 
-        drawSlice('#28a745', greenCount);
-        drawSlice('#ffc107', yellowCount);
-        drawSlice('#dc3545', redCount);
-        drawSlice('#6c757d', greyCount);
-        
-        const legendX = chartCenterX + chartRadius + 20;
-        const legendY = chartCenterY - chartRadius + 10;
-        const legendSpacing = 15;
-        
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
-        doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
-
-        if (greenCount > 0) {
-            doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
-        }
-        if (yellowCount > 0) {
-            doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
-        }
-        if (redCount > 0) {
-            doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
-        }
-        if (greyCount > 0) {
-            doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
-        }
-    } else {
-         doc.fontSize(12).text('No hay datos suficientes para generar la gráfica de avance.', 50, doc.y);
-    }
-    
-    doc.moveDown(6);
-
-    // FIX para 'write after end': Llamamos a addFooter en todas las páginas ANTES de doc.end()
-    const numPages = doc.bufferedPageRange().count;
-    for (let i = 0; i < numPages; i++) {
-        doc.switchToPage(i);
-        await addFooter(doc);
-    }
-    doc.switchToPage(numPages - 1); // Vuelve a la última página para que doc.end() funcione correctamente
+  if (greenCount > 0) {
+      doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
+  }
+  if (yellowCount > 0) {
+      doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
+  }
+  if (redCount > 0) {
+      doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
+  }
+  if (greyCount > 0) {
+      doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
+  }
+  
+  doc.moveDown(6);
 
   doc.end();
 }
 
-  @Get(':id/report')
-  @UseGuards(AuthGuard('jwt'))
-  async generateReport(
-    @Param('id') id: string,
-    @Res() res: Response
-  ) {
-    const project = await this.proyectoService.getProjectReportData(+id);
+  @Get(':id/report')
+  @UseGuards(AuthGuard('jwt'))
+  async generateReport(
+    @Param('id') id: string,
+    @Res() res: Response
+  ) {
+    const project = await this.proyectoService.getProjectReportData(+id);
 
-    if (!project) {
-      throw new NotFoundException(`Proyecto con ID ${id} no encontrado para generar reporte.`);
-    }
+    if (!project) {
+      throw new NotFoundException(`Proyecto con ID ${id} no encontrado para generar reporte.`);
+    }
 
-    // 1. Configuración del documento
-    const doc = new PDFDocument({ autoFirstPage: false });
-    const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
+    const doc = new PDFDocument();
+    const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    doc.pipe(res);
+    doc.pipe(res);
 
-    // Agregar la primera página (y se llama addHeader/addFooter en on('pageAdded'))
-    doc.addPage();
+    const tecNMUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
+    const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
 
-    // 2. Definir callback para encabezado en cada nueva página
-    doc.on('pageAdded', async () => {
-      await addHeader(doc);
-      doc.y = 110; // Posición de inicio del contenido
-    });
+    try {
+      const [tecNMResponse, itoResponse] = await Promise.all([
+        axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
+        axios.get(itoUrl, { responseType: 'arraybuffer' })
+      ]);
+      const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
+      const itoImageBuffer = Buffer.from(itoResponse.data);
+
+      doc.image(tecNMImageBuffer, 50, 50, { width: 180 });
+      doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
+    } catch (error) {
+      console.error('Error al descargar los logos (reinicia la app 1):', error.message);
+      doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
+    }
+
+    doc.moveDown(6);
+    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
+    doc.moveDown(1);
+
+    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
+    doc.moveDown(1);
+
+    doc.fontSize(12);
+
+    doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
+        .font('Helvetica').text(`${project.idProyecto}`);
+    doc.moveDown(1);
+
+    const fase = project.faseActual !== null ? project.faseActual : 1;
+    const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
+    const color = getProgressColor(project.fechaInicio, project.fechaFinAprox, fase);
+
+    doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+      .font('Helvetica').text(`Fase ${project.faseActual !== null ? project.faseActual : 'N/A'} (${avance}%)`);
+    doc.moveDown(1);
     
-    // Asegurarse de que el encabezado esté en la primera página
-    await addHeader(doc);
+    doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
+        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
+    doc.moveDown(1);
 
-    // Iniciar el contenido principal
-    doc.y = 110; // Reset Y después del encabezado
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+        .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
+    doc.moveDown(1);
 
-    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Población Beneficiada : ', { continued: true })
+        .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+    doc.moveDown(1);
 
-    doc.fontSize(12);
+    doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
+        .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
-        .font('Helvetica').text(`${project.idProyecto}`);
-    doc.moveDown(1);
+    // Ajustamos la función formatDate para aceptar 'Date | null'
+    const formatDate = (date: Date | null) => {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    };
 
-    const fase = project.faseActual !== null ? project.faseActual : 1;
-    const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
-    const color = getProgressColor(project.fechaInicio, project.fechaFinAprox, fase);
+    doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
+        .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-      .font('Helvetica').text(`Fase ${project.faseActual !== null ? project.faseActual : 'N/A'} (${avance}%)`);
-    doc.moveDown(1);
-    
-    doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
-        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
+        .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
-        .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
-    doc.moveDown(1);
-
-    doc.font('Helvetica-Bold').text('Población Beneficiada : ', { continued: true })
-        .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-    doc.moveDown(1);
-
-    doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
-        .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
-    doc.moveDown(1);
-
-    // Ajustamos la función formatDate para aceptar 'Date | null'
-    const formatDate = (date: Date | null) => {
-        if (!date) return 'N/A';
-        const d = new Date(date);
-        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-    };
-
-    doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
-        .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
-    doc.moveDown(1);
-
-    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
-        .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
-    doc.moveDown(1);
-
-    // Salto de página si el siguiente bloque no cabe
-    if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { 
-        doc.addPage();
+    if (project.justificacionFase) {
+      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
+      doc.moveDown(1);
+      doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
+      doc.moveDown(2);
     }
 
-    if (project.justificacionFase) {
-      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
-      doc.moveDown(1);
-      doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
-      doc.moveDown(2);
-    }
-    
-    // Salto de página si el siguiente bloque no cabe
-    if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { 
-        doc.addPage();
+    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
+    doc.moveDown(1);
+    if (project.personasDirectorio && project.personasDirectorio.length > 0) {
+      project.personasDirectorio.forEach(persona => {
+        doc.fontSize(12);
+        doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
+            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
+        doc.moveDown(0.2);
+
+        if (persona.rolEnProyecto) {
+          doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
+              .font('Helvetica').text(`${persona.rolEnProyecto}`);
+          doc.moveDown(0.2);
+        }
+        if (persona.contacto) {
+          doc.font('Helvetica-Bold').text('Contacto: ', { continued: true })
+              .font('Helvetica').text(`${persona.contacto}`);
+          doc.moveDown(0.2);
+        }
+        doc.moveDown(1);
+      });
+    } else {
+      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
+      doc.moveDown(1);
     }
 
-    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
-    doc.moveDown(1);
-    if (project.personasDirectorio && project.personasDirectorio.length > 0) {
-      project.personasDirectorio.forEach(persona => {
-        // Comprobar espacio para la persona
-        if (doc.y > doc.page.height - doc.page.margins.bottom - 50) { 
-          doc.addPage();
-        }
+    if (project.imagenes && project.imagenes.length > 0) {
+      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
+      doc.moveDown(1);
 
-        doc.fontSize(12);
-        doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
-            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
-        doc.moveDown(0.2);
+      const imagePathBase = join(__dirname, '..', 'uploads');
 
-        if (persona.rolEnProyecto) {
-          doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
-              .font('Helvetica').text(`${persona.rolEnProyecto}`);
-          doc.moveDown(0.2);
-        }
-        if (persona.contacto) {
-          doc.font('Helvetica-Bold').text('Contacto: ', { continued: true })
-              .font('Helvetica').text(`${persona.contacto}`);
-          doc.moveDown(0.2);
-        }
-        doc.moveDown(1);
-      });
-    } else {
-      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
-      doc.moveDown(1);
-    }
+      project.imagenes.forEach((img, index) => {
+        const fullImagePath = join(imagePathBase, img.url);
 
-    if (project.imagenes && project.imagenes.length > 0) {
-      doc.moveDown(1);
-
-      const imagePathBase = join(__dirname, '..', 'uploads');
-
-      project.imagenes.forEach((img, index) => {
-        const fullImagePath = join(imagePathBase, img.url);
-
-        if (fs.existsSync(fullImagePath)) {
-          // Comprobar espacio para la imagen (estimando un espacio grande)
-          if (doc.y > doc.page.height - doc.page.margins.bottom - 350) { 
-            doc.addPage();
-          }
-
-          doc.image(fullImagePath, {
-            fit: [500, 300],
-            align: 'center',
-            valign: 'center'
-          });
-          doc.moveDown(1);
-        } else {
-          doc.moveDown(1);
-        }
-      });
-    } else {
-      doc.moveDown(1);
-    }
-
-    // FIX para 'write after end': Llamamos a addFooter en todas las páginas ANTES de doc.end()
-    const numPages = doc.bufferedPageRange().count;
-    for (let i = 0; i < numPages; i++) {
-        doc.switchToPage(i);
-        await addFooter(doc);
+        if (fs.existsSync(fullImagePath)) {
+          doc.image(fullImagePath, {
+            fit: [500, 300],
+            align: 'center',
+            valign: 'center'
+          });
+          doc.moveDown(1);
+        } else {
+          //doc.fontSize(12).font('Helvetica').text(`Imagen ${index + 1}: Archivo no encontrado en el servidor.`);
+          //doc.moveDown(1);
+        }
+      });
+    } else {
+      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
+      //doc.moveDown(1);
+      //doc.fontSize(12).font('Helvetica').text('No hay imágenes asociadas a este proyecto.');
+      doc.moveDown(1);
     }
-    doc.switchToPage(numPages - 1); // Vuelve a la última página
-
-    doc.end();
-  }
+    doc.end();
+  }
 }
