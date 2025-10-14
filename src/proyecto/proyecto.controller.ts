@@ -702,7 +702,7 @@ async generateGeneralReport(@Res() res: Response) {
         doc.moveDown(1);
       });
     } else {
-      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
+      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas 1.');
       doc.moveDown(1);
     }
 
@@ -733,8 +733,6 @@ async generateGeneralReport(@Res() res: Response) {
     } else {
       doc.moveDown(1);
     }
-
-  // Agregar pie de página a la última página antes de finalizar
   
     doc.end();
   }
