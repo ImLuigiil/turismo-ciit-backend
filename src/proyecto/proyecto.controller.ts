@@ -194,57 +194,6 @@ const addHeader = async (doc: PDFKit.PDFDocument) => {
     }
 };
 
-const addFooter = async (doc: PDFKit.PDFDocument) => { // Uso de tipo PDFKit.PDFDocument
-    const margin = 50;
-    const logoMujerIndigenaWidth = 40;
-    const logoY = doc.page.height - 70; // Posición Y fija para el logo
-    const textAddress = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
-
-    // Se ajusta el margen inferior para el contenido, dejando espacio para el pie de página
-    doc.page.margins.bottom = 90; 
-    
-    // 1. Línea Roja (Encima del contenido del footer)
-    const redLineY = doc.page.height - doc.page.margins.bottom + 5; // Calcula posición exacta de la línea
-    doc.save()
-        .moveTo(margin, redLineY)
-        .lineTo(doc.page.width - margin, redLineY)
-        .strokeColor('#C50E18') // Rojo Institucional
-        .lineWidth(1)
-        .stroke()
-        .restore();
-
-    // 2. Logo 2025 Año de la Mujer Indígena (Izquierda)
-    try {
-        const logos = await downloadLogos();
-        const logoX = margin;
-
-        doc.image(logos.mujerIndigena, logoX, logoY, { width: logoMujerIndigenaWidth });
-
-        // 3. Dirección y contacto (A la derecha del logo, encima de la línea roja)
-        // La solicitud indica que la línea roja debe estar adelante del logo. 
-        // Lo interpretamos como: la línea roja marca el borde superior del footer.
-        // La información de texto debe estar arriba de la línea roja, pero se verá mejor si está debajo
-        // como en el documento de ejemplo (CIRCULAR_M00_28_2025_DG.pdf).
-
-        // Si la solicitud es que la información esté encima de la línea roja, necesitamos un ajuste de coordenadas.
-        // Asumiendo el formato del documento de referencia, pondremos la información debajo de la línea.
-        
-        const textX = logoX + logoMujerIndigenaWidth + 10;
-        const textY = logoY + 5;
-        doc.fontSize(8).fillColor('#555555').font('Helvetica');
-        
-        doc.text(textAddress, textX, textY, {
-            width: doc.page.width - textX - margin,
-            align: 'left',
-            lineGap: 1 // Espaciado entre líneas
-        });
-
-    } catch (error) {
-        doc.fontSize(8).fillColor('#888888').text('Error al cargar logos de Pie de Página', margin, logoY);
-        // Mostrar solo la dirección si falla el logo
-        doc.fontSize(8).fillColor('#555555').font('Helvetica').text(textAddress, margin + 50, logoY + 10);
-    }
-};
 
 
 // Función para agregar encabezado y pie a cada página (la lógica se mantiene)
@@ -253,7 +202,6 @@ const addHeaderAndFooterToAllPages = async (doc: PDFKit.PDFDocument, callback: (
     for (let i = 0; i < numPages; i++) {
         doc.switchToPage(i);
         await addHeader(doc);
-        await addFooter(doc);
         // Este bloque ya no es necesario si usamos doc.on('pageAdded'), pero lo mantengo
         // por si se usó originalmente en algún otro contexto
         if (i < numPages - 1) {
@@ -620,7 +568,6 @@ async generateGeneralReport(@Res() res: Response) {
   doc.moveDown(6);
 
   // Agregar pie de página a la última página antes de finalizar
-  await addFooter(doc);
 
   doc.end();
 }
@@ -788,7 +735,6 @@ async generateGeneralReport(@Res() res: Response) {
     }
 
   // Agregar pie de página a la última página antes de finalizar
-  await addFooter(doc);
   
     doc.end();
   }
