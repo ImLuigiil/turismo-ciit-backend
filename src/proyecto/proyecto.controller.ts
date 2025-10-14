@@ -145,28 +145,43 @@ const downloadLogos = async () => {
     }
 };
 
-const addHeader = async (doc: PDFKit.PDFDocument) => { // Uso de tipo PDFKit.PDFDocument
-    // Reajusta el margen superior para que el contenido empiece después del encabezado
-    doc.page.margins.top = 100; 
-
-    // Obtener las dimensiones de la página
+const addHeader = async (doc: PDFKit.PDFDocument) => { 
     const margin = 50;
-    const pageY = 0;
-    const pageWidth = doc.page.width - 2 * margin;
+    const headerHeight = 90; // Altura que ocupará el header
+    const logoSepWidth = 60;
+    const logoTecNMWidth = 80;
+    const spaceBetweenLogos = 10;
+    
+    // Posición Y de la parte superior del encabezado
+    const startY = 20;
+    const logoY = startY + 5; 
+    
+    // Se ajusta el margen superior para el contenido, dejando espacio para el encabezado
+    doc.page.margins.top = margin + headerHeight; 
 
     try {
         const logos = await downloadLogos();
 
         // 1. Logo SEP (Izquierda)
-        const logoSepWidth = 80;
-        doc.image(logos.sep, margin, pageY + 20, { width: logoSepWidth });
+        let currentX = margin;
+        doc.image(logos.sep, currentX, logoY, { width: logoSepWidth });
 
-        // 2. Logo TecNM (Derecha)
-        const logoTecNMWidth = 100;
-        doc.image(logos.tecnm, doc.page.width - margin - logoTecNMWidth, pageY + 20, { width: logoTecNMWidth });
+        // 2. Línea Vertical Amarilla
+        currentX += logoSepWidth + spaceBetweenLogos;
+        doc.save()
+           .moveTo(currentX, logoY + 5) // Inicia un poco abajo
+           .lineTo(currentX, logoY + logoSepWidth - 5) // Termina un poco arriba
+           .strokeColor('#FFC300') // Amarillo Institucional
+           .lineWidth(1)
+           .stroke()
+           .restore();
+           
+        // 3. Logo TecNM (Junto a la línea vertical)
+        currentX += spaceBetweenLogos;
+        doc.image(logos.tecnm, currentX, logoY, { width: logoTecNMWidth });
 
-        // 3. Línea Amarilla delgada
-        const lineY = pageY + 85;
+        // 4. Línea Amarilla Horizontal (Separador)
+        const lineY = startY + headerHeight - 5;
         doc.save()
            .moveTo(margin, lineY)
            .lineTo(doc.page.width - margin, lineY)
@@ -180,9 +195,9 @@ const addHeader = async (doc: PDFKit.PDFDocument) => { // Uso de tipo PDFKit.PDF
 
     } catch (error) {
         // En caso de error de descarga, solo dibuja una línea y texto
-        doc.fontSize(10).fillColor('#888888').text('Error al cargar logos de Encabezado', margin, pageY + 30);
-        doc.moveTo(margin, pageY + 85).lineTo(doc.page.width - margin, pageY + 85).strokeColor('#000000').lineWidth(0.5).stroke();
-        doc.y = 95;
+        doc.fontSize(10).fillColor('#888888').text('Error al cargar logos de Encabezado', margin, startY + 10);
+        doc.moveTo(margin, startY + headerHeight - 5).lineTo(doc.page.width - margin, startY + headerHeight - 5).strokeColor('#000000').lineWidth(0.5).stroke();
+        doc.y = startY + headerHeight + 5;
     }
 };
 
@@ -190,6 +205,7 @@ const addFooter = async (doc: PDFKit.PDFDocument) => { // Uso de tipo PDFKit.PDF
     const margin = 50;
     const footerY = doc.page.height - 75; // Posición fija para el pie de página
     const pageWidth = doc.page.width - 2 * margin;
+    const textAddress = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
     // 1. Línea Roja
     const redLineY = footerY;
@@ -215,9 +231,7 @@ const addFooter = async (doc: PDFKit.PDFDocument) => { // Uso de tipo PDFKit.PDF
         const textY = logoY + 5;
         doc.fontSize(8).fillColor('#555555').font('Helvetica');
         
-        const address = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
-
-        doc.text(address, textX, textY, {
+        doc.text(textAddress, textX, textY, {
             width: pageWidth - logoMujerIndigenaWidth - 10,
             align: 'left',
             lineGap: 1 // Espaciado entre líneas
@@ -226,8 +240,7 @@ const addFooter = async (doc: PDFKit.PDFDocument) => { // Uso de tipo PDFKit.PDF
     } catch (error) {
         doc.fontSize(8).fillColor('#888888').text('Error al cargar logos de Pie de Página', margin, footerY + 10);
         // Mostrar solo la dirección si falla el logo
-        const address = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
-        doc.fontSize(8).fillColor('#555555').font('Helvetica').text(address, margin, footerY + 10);
+        doc.fontSize(8).fillColor('#555555').font('Helvetica').text(textAddress, margin, footerY + 10);
     }
     
     // Restaurar el margen inferior a su valor original
