@@ -7,7 +7,7 @@ import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
-import PDFDocument from 'pdfkit'; // CAMBIO A IMPORTACIÓN DEFAULT
+import * as PDFDocument from 'pdfkit'; // Revertido a la importación original
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
