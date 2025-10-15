@@ -28,14 +28,16 @@ const LOGO_SPACING = 15;
 // --- FIN CONSTANTES ENCABEZADO ---
 
 
-// --- NUEVAS CONSTANTES PIE DE PÁGINA ---
+// --- NUEVAS CONSTANTES PIE DE PÁGINA (CORREGIDAS) ---
 // Logos al lado izquierdo del texto
 const LOGO_IZQ_1_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_ad1TRzUNczr7qEP260D8gu4szFzh_we59w&s'; 
 const LOGO_IZQ_2_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL4am0BuytAGl36oNx6laPZkToh0tzlJveOg&s';
 
 const FOOTER_TEXT = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
-const FOOTER_Y_POS = 750; // Posición Y donde comienza el pie de página (cerca del final de la hoja A4)
+// Nueva posición para el pie de página (más segura, aprox 52pt del borde inferior)
+const FOOTER_LINE_Y = 740; 
+const FOOTER_Y_POS = FOOTER_LINE_Y - 40; // Posición Y de los logos y texto (700)
 const FOOTER_LINE_COLOR = '#C00000'; // Rojo
 const FOOTER_LINE_THICKNESS = 1;
 const FOOTER_LOGO_SIZE = 30; // Tamaño pequeño para los logos del pie de página
@@ -100,7 +102,7 @@ const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buff
        );
 
     // 3. Dibujar línea roja horizontal
-    const lineY = FOOTER_Y_POS + FOOTER_LOGO_SIZE + 10;
+    const lineY = FOOTER_LINE_Y;
     doc.save()
         .moveTo(margin, lineY)
         .lineTo(pageRightBound, lineY)
@@ -108,10 +110,7 @@ const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buff
         .stroke(FOOTER_LINE_COLOR);
     doc.restore();
 
-    // 4. Mover cursor Y para asegurar que el siguiente contenido no pegue con el footer
-    // LÍNEA CORREGIDA: Ya no modificamos doc.y aquí para evitar la recursión. 
-    // addHeader ya reseteó doc.y al margen superior (100).
-    // doc.y = lineY + 10; 
+    // Importante: No tocamos doc.y aquí para evitar la recursión de adición de página
 };
 // --- FIN FUNCIÓN REUTILIZABLE ---
 
