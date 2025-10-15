@@ -18,7 +18,7 @@ const SEP_LOGO_URL = 'https://www.gob.mx/cms/uploads/action_program/main_image/3
 const TECNM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
 
 const HEADER_Y_POS = 50;
-const HEADER_MARGIN_BOTTOM = 100; 
+const HEADER_MARGIN_BOTTOM = 120; 
 const LOGO_HEIGHT = 45; 
 const LOGO_SEP_WIDTH = 70; 
 const LOGO_TECNM_WIDTH = 110; 
@@ -439,7 +439,7 @@ async generateGeneralReport(@Res() res: Response) {
   doc.y = HEADER_MARGIN_BOTTOM; 
   
   // Aseguramos alineación a la izquierda (50 es el margen por defecto)
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', 50, doc.y, { align: 'left' });
+  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
   doc.moveDown(2);
   
   const formatDate = (date: Date | null) => {
@@ -629,7 +629,7 @@ async generateGeneralReport(@Res() res: Response) {
     doc.y = HEADER_MARGIN_BOTTOM;
 
     // **AJUSTE CLAVE:** Anclamos el título principal a la coordenada X=50 para forzar alineación izquierda.
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, 50, doc.y, { align: 'left' });
+    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`,{ align: 'center' });
     doc.moveDown(1);
 
     // Anclamos el encabezado de sección a la coordenada X=50.
