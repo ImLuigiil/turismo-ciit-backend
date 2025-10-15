@@ -22,9 +22,9 @@ const TECNM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1
 // Parámetros de diseño del encabezado
 const HEADER_Y_POS = 50; // Posición Y donde inician los logos
 const HEADER_MARGIN_BOTTOM = 120; // Posición Y donde debe empezar el texto del reporte (margen de seguridad)
-const LOGO_HEIGHT = 45; 
-const LOGO_SEP_WIDTH = 135; // Ancho ajustado para la SEP
-const LOGO_TECNM_WIDTH = 55; // Ancho ajustado para el TecNM
+const LOGO_HEIGHT = 60; 
+const LOGO_SEP_WIDTH = 120; // Ancho ajustado para la SEP
+const LOGO_TECNM_WIDTH = 30; // Ancho ajustado para el TecNM
 const LINE_COLOR = '#FFD700'; // Amarillo (Hex: oro/amarillo)
 const LINE_THICKNESS = 3;
 const LOGO_SPACING = 15; // Espacio entre logos y la línea
