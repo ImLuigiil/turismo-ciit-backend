@@ -22,9 +22,9 @@ const TECNM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/1
 // Parámetros de diseño del encabezado
 const HEADER_Y_POS = 50; // Posición Y donde inician los logos
 const HEADER_MARGIN_BOTTOM = 120; // Posición Y donde debe empezar el texto del reporte (margen de seguridad)
-const LOGO_HEIGHT = 60; 
-const LOGO_SEP_WIDTH = 120; // Ancho ajustado para la SEP
-const LOGO_TECNM_WIDTH = 30; // Ancho ajustado para el TecNM
+const LOGO_HEIGHT = 45; 
+const LOGO_SEP_WIDTH = 70; // [EDITADO] Ancho de la caja de contención ajustado para el logo SEP (menos ancho)
+const LOGO_TECNM_WIDTH = 110; // [EDITADO] Ancho de la caja de contención ajustado para el logo TecNM (más ancho, es un logo horizontal)
 const LINE_COLOR = '#FFD700'; // Amarillo (Hex: oro/amarillo)
 const LINE_THICKNESS = 3;
 const LOGO_SPACING = 15; // Espacio entre logos y la línea
@@ -39,7 +39,8 @@ const addHeader = (doc: PDFKit.PDFDocument, sepBuffer: Buffer, tecNmBuffer: Buff
     const lineYEnd = HEADER_Y_POS + LOGO_HEIGHT + 5;
 
     // 1. Logo SEP (Izquierda - Primer logo)
-    doc.image(sepBuffer, margin, HEADER_Y_POS, { width: LOGO_SEP_WIDTH, height: LOGO_HEIGHT });
+    // USO DE 'fit' para asegurar que el logo se escale dentro del bounding box [WIDTH, HEIGHT] sin deformarse (manteniendo el aspect ratio).
+    doc.image(sepBuffer, margin, HEADER_Y_POS, { fit: [LOGO_SEP_WIDTH, LOGO_HEIGHT] });
 
     // 2. Línea Separadora Vertical Amarilla
     doc.save()
@@ -52,7 +53,8 @@ const addHeader = (doc: PDFKit.PDFDocument, sepBuffer: Buffer, tecNmBuffer: Buff
     const tecNmX = lineX + LOGO_SPACING;
 
     // 3. Logo TecNM (Derecha de la línea)
-    doc.image(tecNmBuffer, tecNmX, HEADER_Y_POS, { width: LOGO_TECNM_WIDTH, height: LOGO_HEIGHT });
+    // USO DE 'fit' para asegurar que el logo se escale dentro del bounding box [WIDTH, HEIGHT] sin deformarse.
+    doc.image(tecNmBuffer, tecNmX, HEADER_Y_POS, { fit: [LOGO_TECNM_WIDTH, LOGO_HEIGHT] });
 
     // 4. Margen de Seguridad: Mover el cursor Y debajo del encabezado
     doc.y = HEADER_MARGIN_BOTTOM;
