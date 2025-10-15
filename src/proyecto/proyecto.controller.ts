@@ -1,4 +1,3 @@
-
 import { Controller, Get, Post, Body, Put, Param, Delete, HttpCode, HttpStatus, UseGuards, UploadedFiles, UseInterceptors, BadRequestException, Res, Patch, UploadedFile, NotFoundException } from '@nestjs/common';
 import { ProyectoService } from './proyecto.service';
 import { CreateProyectoDto } from './dto/create-proyecto.dto';
@@ -14,284 +13,330 @@ import * as fs from 'fs';
 import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 
+// --- NUEVAS CONSTANTES PARA EL ENCABEZADO ---
+// SEP logo (requerido por el usuario)
+const SEP_LOGO_URL = 'https://www.gob.mx/cms/uploads/action_program/main_image/3180/post_logo_educ.jpg';
+// TecNM logo (versión PNG para compatibilidad con pdfkit)
+const TECNM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
+
+// Parámetros de diseño del encabezado
+const HEADER_Y_POS = 50; // Posición Y donde inician los logos
+const HEADER_MARGIN_BOTTOM = 100; // Posición Y donde debe empezar el texto del reporte (margen de seguridad)
+const LOGO_HEIGHT = 45; 
+const LOGO_SEP_WIDTH = 135; // Ancho ajustado para la SEP
+const LOGO_TECNM_WIDTH = 55; // Ancho ajustado para el TecNM
+const LINE_COLOR = '#FFD700'; // Amarillo (Hex: oro/amarillo)
+const LINE_THICKNESS = 3;
+const LOGO_SPACING = 15; // Espacio entre logos y la línea
+// --- FIN CONSTANTES ---
+
+
+// --- FUNCIÓN REUTILIZABLE PARA EL ENCABEZADO ---
+const addHeader = (doc: PDFKit.PDFDocument, sepBuffer: Buffer, tecNmBuffer: Buffer) => {
+    const margin = 50; // Margen izquierdo
+    const lineX = margin + LOGO_SEP_WIDTH + LOGO_SPACING;
+    const lineYStart = HEADER_Y_POS - 5;
+    const lineYEnd = HEADER_Y_POS + LOGO_HEIGHT + 5;
+
+    // 1. Logo SEP (Izquierda - Primer logo)
+    doc.image(sepBuffer, margin, HEADER_Y_POS, { width: LOGO_SEP_WIDTH, height: LOGO_HEIGHT });
+
+    // 2. Línea Separadora Vertical Amarilla
+    doc.save()
+        .moveTo(lineX, lineYStart)
+        .lineTo(lineX, lineYEnd)
+        .lineWidth(LINE_THICKNESS)
+        .stroke(LINE_COLOR);
+    doc.restore();
+
+    const tecNmX = lineX + LOGO_SPACING;
+
+    // 3. Logo TecNM (Derecha de la línea)
+    doc.image(tecNmBuffer, tecNmX, HEADER_Y_POS, { width: LOGO_TECNM_WIDTH, height: LOGO_HEIGHT });
+
+    // 4. Margen de Seguridad: Mover el cursor Y debajo del encabezado
+    doc.y = HEADER_MARGIN_BOTTOM;
+};
+// --- FIN FUNCIÓN REUTILIZABLE ---
+
 
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
-  if (!fechaInicio || !fechaFinAprox) {
-    return [];
-  }
-  const startDate = new Date(fechaInicio);
-  const endDate = new Date(fechaFinAprox);
-  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
-    return [];
-  }
-  const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-  const timeForFirstThreePhases = totalDurationDays * 0.75;
-  const daysPerEarlyPhase = timeForFirstThreePhases / 3;
-  const timeForLastFourPhases = totalDurationDays * 0.25;
-  const daysPerLatePhase = timeForLastFourPhases / 4;
-  const phaseEndDates: Date[] = [];
-  let cumulativeDays = 0;
-  for (let i = 0; i < 3; i++) {
-    cumulativeDays += daysPerEarlyPhase;
-    const phaseEndDate = new Date(startDate);
-    phaseEndDate.setDate(startDate.getDate() + cumulativeDays);
-    phaseEndDates.push(phaseEndDate);
-  }
-  for (let i = 0; i < 4; i++) {
-    cumulativeDays += daysPerLatePhase;
-    const phaseEndDate = new Date(startDate);
-    phaseEndDate.setDate(startDate.getDate() + Math.round(cumulativeDays));
-    phaseEndDates.push(phaseEndDate);
-  }
-  return phaseEndDates;
+  if (!fechaInicio || !fechaFinAprox) {
+    return [];
+  }
+  const startDate = new Date(fechaInicio);
+  const endDate = new Date(fechaFinAprox);
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
+    return [];
+  }
+  const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+  const timeForFirstThreePhases = totalDurationDays * 0.75;
+  const daysPerEarlyPhase = timeForFirstThreePhases / 3;
+  const timeForLastFourPhases = totalDurationDays * 0.25;
+  const daysPerLatePhase = timeForLastFourPhases / 4;
+  const phaseEndDates: Date[] = [];
+  let cumulativeDays = 0;
+  for (let i = 0; i < 3; i++) {
+    cumulativeDays += daysPerEarlyPhase;
+    const phaseEndDate = new Date(startDate);
+    phaseEndDate.setDate(startDate.getDate() + cumulativeDays);
+    phaseEndDates.push(phaseEndDate);
+  }
+  for (let i = 0; i < 4; i++) {
+    cumulativeDays += daysPerLatePhase;
+    const phaseEndDate = new Date(startDate);
+    phaseEndDate.setDate(startDate.getDate() + Math.round(cumulativeDays));
+    phaseEndDates.push(phaseEndDate);
+  }
+  return phaseEndDates;
 };
 
 const calculateTimeBasedProgress = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
-  if (!fechaInicio || !fechaFinAprox) return 0;
-  const startDate = new Date(fechaInicio);
-  const endDate = new Date(fechaFinAprox);
-  const currentDate = new Date();
-  if (currentDate < startDate) return 0;
-  if (currentDate > endDate) return 100;
-  const totalDuration = endDate.getTime() - startDate.getTime();
-  const elapsedDuration = currentDate.getTime() - startDate.getTime();
-  if (totalDuration <= 0) return 100;
-  return (elapsedDuration / totalDuration) * 100;
+  if (!fechaInicio || !fechaFinAprox) return 0;
+  const startDate = new Date(fechaInicio);
+  const endDate = new Date(fechaFinAprox);
+  const currentDate = new Date();
+  if (currentDate < startDate) return 0;
+  if (currentDate > endDate) return 100;
+  const totalDuration = endDate.getTime() - startDate.getTime();
+  const elapsedDuration = currentDate.getTime() - startDate.getTime();
+  if (totalDuration <= 0) return 100;
+  return (elapsedDuration / totalDuration) * 100;
 };
 
 const calcularAvance = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null) => {
-    if (!fechaInicio || !fechaFinAprox || faseActual === null) return 0;
-    if ((faseActual ?? 0) >= 7) {
-        return 100;
-    }
-    const getPhaseProgress = (fase: number) => {
-        if (fase <= 1) return 0;
-        const progressMap = { 2: 25, 3: 50, 4: 75, 5: 81.25, 6: 87.5, 7: 100 };
-        return progressMap[fase] || 0;
-    };
-    const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
-    const phaseTargetPercentage = getPhaseProgress(faseActual);
-    const endDate = new Date(fechaFinAprox);
-    const currentDate = new Date();
-    if (currentDate > endDate && faseActual < 7) {
-        return Math.min(100, Math.max(0, Math.round(phaseTargetPercentage)));
-    }
-    let finalPercentage = Math.max(timeBasedPercentage, phaseTargetPercentage);
-    return Math.min(100, Math.max(0, Math.round(finalPercentage)));
+    if (!fechaInicio || !fechaFinAprox || faseActual === null) return 0;
+    if ((faseActual ?? 0) >= 7) {
+        return 100;
+    }
+    const getPhaseProgress = (fase: number) => {
+        if (fase <= 1) return 0;
+        const progressMap = { 2: 25, 3: 50, 4: 75, 5: 81.25, 6: 87.5, 7: 100 };
+        return progressMap[fase] || 0;
+    };
+    const timeBasedPercentage = calculateTimeBasedProgress(fechaInicio, fechaFinAprox);
+    const phaseTargetPercentage = getPhaseProgress(faseActual);
+    const endDate = new Date(fechaFinAprox);
+    const currentDate = new Date();
+    if (currentDate > endDate && faseActual < 7) {
+        return Math.min(100, Math.max(0, Math.round(phaseTargetPercentage)));
+    }
+    let finalPercentage = Math.max(timeBasedPercentage, phaseTargetPercentage);
+    return Math.min(100, Math.max(0, Math.round(finalPercentage)));
 };
 
 const getProgressColor = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null) => {
-  if (!fechaInicio || !fechaFinAprox || faseActual === null || faseActual < 1) {
-    return '#28a745';
-  }
-  if (faseActual === 7) {
-    return '#28a745';
-  }
-  const currentDate = new Date();
-  const endDate = new Date(fechaFinAprox);
-  if (currentDate > endDate) {
-    return '#dc3545';
-  }
-  const schedule = getPhaseSchedule(fechaInicio, fechaFinAprox);
-  if (schedule.length === 0) {
-    return '#28a745';
-  }
-  const expectedEndDateForCurrentPhase = schedule[faseActual - 1];
-  const timeDifference = currentDate.getTime() - expectedEndDateForCurrentPhase.getTime();
-  const daysBehind = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-  if (daysBehind <= 0) {
-    return '#28a745';
-  }
-  if (daysBehind >= 5) {
-    return '#dc3545';
-  }
-  if (daysBehind >= 1 && daysBehind <= 4) {
-    return '#ffc107';
-  }
-  return '#28a745';
+  if (!fechaInicio || !fechaFinAprox || faseActual === null || faseActual < 1) {
+    return '#28a745';
+  }
+  if (faseActual === 7) {
+    return '#28a745';
+  }
+  const currentDate = new Date();
+  const endDate = new Date(fechaFinAprox);
+  if (currentDate > endDate) {
+    return '#dc3545';
+  }
+  const schedule = getPhaseSchedule(fechaInicio, fechaFinAprox);
+  if (schedule.length === 0) {
+    return '#28a745';
+  }
+  const expectedEndDateForCurrentPhase = schedule[faseActual - 1];
+  const timeDifference = currentDate.getTime() - expectedEndDateForCurrentPhase.getTime();
+  const daysBehind = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
+  if (daysBehind <= 0) {
+    return '#28a745';
+  }
+  if (daysBehind >= 5) {
+    return '#dc3545';
+  }
+  if (daysBehind >= 1 && daysBehind <= 4) {
+    return '#ffc107';
+  }
+  return '#28a745';
 };
 
 
 @Controller('proyectos')
 export class ProyectoController {
-  constructor(private readonly proyectoService: ProyectoService) {}
+  constructor(private readonly proyectoService: ProyectoService) {}
 
-  @Get()
-  findAll() {
-    return this.proyectoService.findAll();
-  }
+  @Get()
+  findAll() {
+    return this.proyectoService.findAll();
+  }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.proyectoService.findOne(+id);
-  }
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.proyectoService.findOne(+id);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @UseInterceptors(
-    FilesInterceptor('images', 15, {
-      storage: diskStorage({
-        destination: './uploads/proyectos',
-        filename: (req, file, cb) => {
-          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: 1024 * 1024 * 5
-      }
-    })
-  )
-  async create(
-    @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: any,
-  ) {
-    const createProyectoDto: CreateProyectoDto = {
-      nombre: body.nombre,
-      descripcion: body.descripcion,
-      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
-      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
-      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
-      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
-      faseActual: body.faseActual ? Number(body.faseActual) : null,
-      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
-      justificacionFase: body.justificacionFase || null,
-    };
+  @UseGuards(AuthGuard('jwt'))
+  @Post()
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FilesInterceptor('images', 15, {
+      storage: diskStorage({
+        destination: './uploads/proyectos',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 5
+      }
+    })
+  )
+  async create(
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() body: any,
+  ) {
+    const createProyectoDto: CreateProyectoDto = {
+      nombre: body.nombre,
+      descripcion: body.descripcion,
+      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
+      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
+      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
+      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
+      faseActual: body.faseActual ? Number(body.faseActual) : null,
+      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
+      justificacionFase: body.justificacionFase || null,
+    };
 
-    if (!files || files.length === 0) {
-      throw new BadRequestException('Se requiere al menos una imagen para el proyecto.');
-    }
+    if (!files || files.length === 0) {
+      throw new BadRequestException('Se requiere al menos una imagen para el proyecto.');
+    }
 
-    const imagenes = files.map(fileItem => ({
-      url: `/uploads/proyectos/${fileItem.filename}`,
-      esPrincipal: 0,
-      orden: 0,
-    }));
+    const imagenes = files.map(fileItem => ({
+      url: `/uploads/proyectos/${fileItem.filename}`,
+      esPrincipal: 0,
+      orden: 0,
+    }));
 
-    return this.proyectoService.createProjectWithImages(createProyectoDto, imagenes);
-  }
+    return this.proyectoService.createProjectWithImages(createProyectoDto, imagenes);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Put(':id')
-  @UseInterceptors(
-    FilesInterceptor('images', 15, {
-      storage: diskStorage({
-        destination: './uploads/proyectos',
-        filename: (req, file, cb) => {
-          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: 1024 * 1024 * 5
-      }
-    })
-  )
-  async update(
-    @Param('id') id: string,
-    @UploadedFiles() files: Array<Express.Multer.File>,
-    @Body() body: any,
-  ) {
-    const updateProyectoDto: UpdateProyectoDto = {
-      nombre: body.nombre,
-      descripcion: body.descripcion,
-      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
-      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
-      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
-      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
-      faseActual: body.faseActual ? Number(body.faseActual) : null,
-      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
-      justificacionFase: body.justificacionFase || null,
-    };
+  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  @UseInterceptors(
+    FilesInterceptor('images', 15, {
+      storage: diskStorage({
+        destination: './uploads/proyectos',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos de imagen (jpg, jpeg, png, gif)!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 5
+      }
+    })
+  )
+  async update(
+    @Param('id') id: string,
+    @UploadedFiles() files: Array<Express.Multer.File>,
+    @Body() body: any,
+  ) {
+    const updateProyectoDto: UpdateProyectoDto = {
+      nombre: body.nombre,
+      descripcion: body.descripcion,
+      comunidadIdComunidad: body.comunidadIdComunidad ? Number(body.comunidadIdComunidad) : null,
+      noCapitulos: body.noCapitulos ? Number(body.noCapitulos) : null,
+      fechaInicio: body.fechaInicio ? new Date(body.fechaInicio) : null,
+      fechaFinAprox: body.fechaFinAprox ? new Date(body.fechaFinAprox) : null,
+      faseActual: body.faseActual ? Number(body.faseActual) : null,
+      poblacionBeneficiada: body.poblacionBeneficiada ? Number(body.poblacionBeneficiada) : null,
+      justificacionFase: body.justificacionFase || null,
+    };
 
-    const imagesToDeleteIds: number[] = body.imagesToDeleteIds ? JSON.parse(body.imagesToDeleteIds) : [];
-    const imagesToUpdateData: Partial<ProyectoImagen>[] = body.imagesToUpdateData ? JSON.parse(body.imagesToUpdateData) : [];
+    const imagesToDeleteIds: number[] = body.imagesToDeleteIds ? JSON.parse(body.imagesToDeleteIds) : [];
+    const imagesToUpdateData: Partial<ProyectoImagen>[] = body.imagesToUpdateData ? JSON.parse(body.imagesToUpdateData) : [];
 
-    const newImages = files.map(fileItem => ({
-      url: `/uploads/proyectos/${fileItem.filename}`,
-      esPrincipal: 0,
-      orden: 0,
-    }));
+    const newImages = files.map(fileItem => ({
+      url: `/uploads/proyectos/${fileItem.filename}`,
+      esPrincipal: 0,
+      orden: 0,
+    }));
 
-    return this.proyectoService.updateProjectWithImages(+id, updateProyectoDto, newImages, imagesToDeleteIds, imagesToUpdateData);
-  }
+    return this.proyectoService.updateProjectWithImages(+id, updateProyectoDto, newImages, imagesToDeleteIds, imagesToUpdateData);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async remove(@Param('id') id: string) {
-    const proyectoId = +id;
-    
-    // 1. Obtener el proyecto
-    const proyecto = await this.proyectoService.findOne(proyectoId);
+  @UseGuards(AuthGuard('jwt'))
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async remove(@Param('id') id: string) {
+    const proyectoId = +id;
+    
+    // 1. Obtener el proyecto
+    const proyecto = await this.proyectoService.findOne(proyectoId);
 
-    if (!proyecto) {
-        throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado.`);
-    }
+    if (!proyecto) {
+        throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado.`);
+    }
 
-    // 2. Validación de Fase antes de Eliminar
-    // Usamos el operador de coalescencia nula (??) para asegurar que si faseActual es null/undefined,
-    // se trate como 1 para la validación.
-    const faseActualSegura = proyecto.faseActual ?? 1; // Asume Fase 1 si es null/undefined
+    // 2. Validación de Fase antes de Eliminar
+    // Usamos el operador de coalescencia nula (??) para asegurar que si faseActual es null/undefined,
+    // se trate como 1 para la validación.
+    const faseActualSegura = proyecto.faseActual ?? 1; // Asume Fase 1 si es null/undefined
 
-    if (faseActualSegura > 1) {
-        throw new BadRequestException('El proyecto no puede ser eliminado porque ya ha iniciado la Fase 2 o superior. Solo los proyectos en Fase 1 pueden ser borrados.');
-    }
-    
-    return this.proyectoService.remove(proyectoId);
-  }
+    if (faseActualSegura > 1) {
+        throw new BadRequestException('El proyecto no puede ser eliminado porque ya ha iniciado la Fase 2 o superior. Solo los proyectos en Fase 1 pueden ser borrados.');
+    }
+    
+    return this.proyectoService.remove(proyectoId);
+  }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Patch(':id/concluir-fase')
-  @UseInterceptors(
-    FileInterceptor('documento', {
-      storage: diskStorage({
-        destination: './uploads/documentos_justificacion',
-        filename: (req, file, cb) => {
-          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
-          cb(null, `${randomName}${extname(file.originalname)}`);
-        },
-      }),
-      fileFilter: (req, file, cb) => {
-        if (!file.originalname.match(/\.(pdf)$/)) {
-          return cb(new BadRequestException('Solo se permiten archivos PDF como documento de justificación!'), false);
-        }
-        cb(null, true);
-      },
-      limits: {
-        fileSize: 1024 * 1024 * 10
-      }
-    })
-  )
-  async concluirFase(
-    @Param('id') id: string,
-    @UploadedFile() documento: Express.Multer.File,
-    @Body('justificacion') justificacion: string,
-  ) {
-    if (!justificacion || justificacion.trim() === '') {
-      throw new BadRequestException('La justificación es obligatoria para avanzar de fase.');
-    }
-    if (!documento) {
-      throw new BadRequestException('Se requiere un documento PDF que avale el cambio de fase.');
-    }
+  @UseGuards(AuthGuard('jwt'))
+  @Patch(':id/concluir-fase')
+  @UseInterceptors(
+    FileInterceptor('documento', {
+      storage: diskStorage({
+        destination: './uploads/documentos_justificacion',
+        filename: (req, file, cb) => {
+          const randomName = Array(32).fill(null).map(() => (Math.round(Math.random() * 16)).toString(16)).join('');
+          cb(null, `${randomName}${extname(file.originalname)}`);
+        },
+      }),
+      fileFilter: (req, file, cb) => {
+        if (!file.originalname.match(/\.(pdf)$/)) {
+          return cb(new BadRequestException('Solo se permiten archivos PDF como documento de justificación!'), false);
+        }
+        cb(null, true);
+      },
+      limits: {
+        fileSize: 1024 * 1024 * 10
+      }
+    })
+  )
+  async concluirFase(
+    @Param('id') id: string,
+    @UploadedFile() documento: Express.Multer.File,
+    @Body('justificacion') justificacion: string,
+  ) {
+    if (!justificacion || justificacion.trim() === '') {
+      throw new BadRequestException('La justificación es obligatoria para avanzar de fase.');
+    }
+    if (!documento) {
+      throw new BadRequestException('Se requiere un documento PDF que avale el cambio de fase.');
+    }
 
-    const documentoUrl = `/uploads/documentos_justificacion/${documento.filename}`;
-    
-    return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
-  }
+    const documentoUrl = `/uploads/documentos_justificacion/${documento.filename}`;
+    
+    return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
+  }
 
 @Get('report/general')
 @UseGuards(AuthGuard('jwt'))
@@ -305,26 +350,30 @@ async generateGeneralReport(@Res() res: Response) {
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   doc.pipe(res);
 
-  const tecNMUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
-  const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
-
+  // --- PASO 1: DESCARGAR Y PREPARAR LOGOS ---
   try {
-    const [tecNMResponse, itoResponse] = await Promise.all([
-      axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
-      axios.get(itoUrl, { responseType: 'arraybuffer' })
+    const [sepResponse, tecNmResponse] = await Promise.all([
+      axios.get(SEP_LOGO_URL, { responseType: 'arraybuffer' }),
+      axios.get(TECNM_LOGO_URL, { responseType: 'arraybuffer' })
     ]);
-    const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
-    const itoImageBuffer = Buffer.from(itoResponse.data);
+    const sepImageBuffer = Buffer.from(sepResponse.data);
+    const tecNmImageBuffer = Buffer.from(tecNmResponse.data);
+  
+    // --- PASO 2: ADJUNTAR ENCABEZADO AL EVENTO pageAdded ---
+    doc.on('pageAdded', () => addHeader(doc, sepImageBuffer, tecNmImageBuffer));
 
-    const logoWidth = 80;
-    doc.image(tecNMImageBuffer, 50, 50, { width: 170 });
-    doc.image(itoImageBuffer, doc.page.width - 50 - logoWidth, 50, { width: logoWidth });
+    // --- PASO 3: DIBUJAR ENCABEZADO DE LA PRIMERA PÁGINA ---
+    addHeader(doc, sepImageBuffer, tecNmImageBuffer);
+
   } catch (error) {
     console.error('Error al descargar los logos:', error.message);
-    doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
+    doc.fontSize(10).text('Error al cargar los logos y el encabezado.', 50, 50);
+    doc.y = 80; // Establecer un margen de seguridad incluso si fallan los logos
   }
+  // --------------------------------------------------------
 
-  doc.moveDown(4);
+  // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
+  
   doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
   doc.moveDown(2);
   
@@ -379,7 +428,7 @@ async generateGeneralReport(@Res() res: Response) {
       doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
       if (doc.y > doc.page.height - 100) {
         doc.addPage();
-        doc.y = 50; // Reset y for new page
+        doc.y = HEADER_MARGIN_BOTTOM; // Reset y for new page, respetando el nuevo encabezado
       }
     });
   }
@@ -455,156 +504,161 @@ async generateGeneralReport(@Res() res: Response) {
   doc.end();
 }
 
-  @Get(':id/report')
-  @UseGuards(AuthGuard('jwt'))
-  async generateReport(
-    @Param('id') id: string,
-    @Res() res: Response
-  ) {
-    const project = await this.proyectoService.getProjectReportData(+id);
+  @Get(':id/report')
+  @UseGuards(AuthGuard('jwt'))
+  async generateReport(
+    @Param('id') id: string,
+    @Res() res: Response
+  ) {
+    const project = await this.proyectoService.getProjectReportData(+id);
 
-    if (!project) {
-      throw new NotFoundException(`Proyecto con ID ${id} no encontrado para generar reporte.`);
-    }
+    if (!project) {
+      throw new NotFoundException(`Proyecto con ID ${id} no encontrado para generar reporte.`);
+    }
 
-    const doc = new PDFDocument();
-    const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
+    const doc = new PDFDocument();
+    const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
 
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-    doc.pipe(res);
+    doc.pipe(res);
 
-    const tecNMUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
-    const itoUrl = 'https://upload.wikimedia.org/wikipedia/commons/thumb/8/85/Instituto_Tecnologico_de_Oaxaca_-_original.svg/800px-Instituto_Tecnologico_de_Oaxaca_-_original.svg.png';
+    // --- PASO 1: DESCARGAR Y PREPARAR LOGOS ---
+    try {
+      const [sepResponse, tecNmResponse] = await Promise.all([
+        axios.get(SEP_LOGO_URL, { responseType: 'arraybuffer' }),
+        axios.get(TECNM_LOGO_URL, { responseType: 'arraybuffer' })
+      ]);
+      const sepImageBuffer = Buffer.from(sepResponse.data);
+      const tecNmImageBuffer = Buffer.from(tecNmResponse.data);
+    
+      // --- PASO 2: ADJUNTAR ENCABEZADO AL EVENTO pageAdded ---
+      doc.on('pageAdded', () => addHeader(doc, sepImageBuffer, tecNmImageBuffer));
 
-    try {
-      const [tecNMResponse, itoResponse] = await Promise.all([
-        axios.get(tecNMUrl, { responseType: 'arraybuffer' }),
-        axios.get(itoUrl, { responseType: 'arraybuffer' })
-      ]);
-      const tecNMImageBuffer = Buffer.from(tecNMResponse.data);
-      const itoImageBuffer = Buffer.from(itoResponse.data);
+      // --- PASO 3: DIBUJAR ENCABEZADO DE LA PRIMERA PÁGINA ---
+      addHeader(doc, sepImageBuffer, tecNmImageBuffer);
 
-      doc.image(tecNMImageBuffer, 50, 50, { width: 180 });
-      doc.image(itoImageBuffer, doc.page.width - 150, 50, { width: 100 });
-    } catch (error) {
-      console.error('Error al descargar los logos (reinicia la app 1):', error.message);
-      doc.fontSize(10).text('Error al cargar los logos.', 50, 50);
-    }
+    } catch (error) {
+      console.error('Error al descargar los logos (reporte individual):', error.message);
+      doc.fontSize(10).text('Error al cargar los logos y el encabezado.', 50, 50);
+      doc.y = 80; // Establecer un margen de seguridad incluso si fallan los logos
+    }
+    // --------------------------------------------------------
 
-    doc.moveDown(6);
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
-    doc.moveDown(1);
+    // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
 
-    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
-    doc.moveDown(1);
+    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
+    doc.moveDown(1);
 
-    doc.fontSize(12);
+    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
-        .font('Helvetica').text(`${project.idProyecto}`);
-    doc.moveDown(1);
+    doc.fontSize(12);
 
-    const fase = project.faseActual !== null ? project.faseActual : 1;
-    const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
-    const color = getProgressColor(project.fechaInicio, project.fechaFinAprox, fase);
+    doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
+        .font('Helvetica').text(`${project.idProyecto}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
-      .font('Helvetica').text(`Fase ${project.faseActual !== null ? project.faseActual : 'N/A'} (${avance}%)`);
-    doc.moveDown(1);
-    
-    doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
-        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
-    doc.moveDown(1);
+    const fase = project.faseActual !== null ? project.faseActual : 1;
+    const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
+    const color = getProgressColor(project.fechaInicio, project.fechaFinAprox, fase);
 
-    doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
-        .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
+      .font('Helvetica').text(`Fase ${project.faseActual !== null ? project.faseActual : 'N/A'} (${avance}%)`);
+    doc.moveDown(1);
+    
+    doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
+        .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Población Beneficiada : ', { continued: true })
-        .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
+        .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
-        .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Población Beneficiada : ', { continued: true })
+        .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
+    doc.moveDown(1);
 
-    // Ajustamos la función formatDate para aceptar 'Date | null'
-    const formatDate = (date: Date | null) => {
-        if (!date) return 'N/A';
-        const d = new Date(date);
-        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-    };
+    doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
+        .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
+    doc.moveDown(1);
 
-    doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
-        .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
-    doc.moveDown(1);
+    // Ajustamos la función formatDate para aceptar 'Date | null'
+    const formatDate = (date: Date | null) => {
+        if (!date) return 'N/A';
+        const d = new Date(date);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    };
 
-    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
-        .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
-    doc.moveDown(1);
+    doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
+        .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
+    doc.moveDown(1);
 
-    if (project.justificacionFase) {
-      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
-      doc.moveDown(1);
-      doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
-      doc.moveDown(2);
-    }
+    doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
+        .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
+    doc.moveDown(1);
 
-    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
-    doc.moveDown(1);
-    if (project.personasDirectorio && project.personasDirectorio.length > 0) {
-      project.personasDirectorio.forEach(persona => {
-        doc.fontSize(12);
-        doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
-            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
-        doc.moveDown(0.2);
+    if (project.justificacionFase) {
+      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
+      doc.moveDown(1);
+      doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
+      doc.moveDown(2);
+    }
 
-        if (persona.rolEnProyecto) {
-          doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
-              .font('Helvetica').text(`${persona.rolEnProyecto}`);
-          doc.moveDown(0.2);
-        }
-        if (persona.contacto) {
-          doc.font('Helvetica-Bold').text('Contacto: ', { continued: true })
-              .font('Helvetica').text(`${persona.contacto}`);
-          doc.moveDown(0.2);
-        }
-        doc.moveDown(1);
-      });
-    } else {
-      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
-      doc.moveDown(1);
-    }
+    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
+    doc.moveDown(1);
+    if (project.personasDirectorio && project.personasDirectorio.length > 0) {
+      project.personasDirectorio.forEach(persona => {
+        doc.fontSize(12);
+        doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
+            .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
+        doc.moveDown(0.2);
 
-    if (project.imagenes && project.imagenes.length > 0) {
-      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
-      doc.moveDown(1);
+        if (persona.rolEnProyecto) {
+          doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
+              .font('Helvetica').text(`${persona.rolEnProyecto}`);
+          doc.moveDown(0.2);
+        }
+        if (persona.contacto) {
+          doc.font('Helvetica-Bold').text('Contacto: ', { continued: true })
+              .font('Helvetica').text(`${persona.contacto}`);
+          doc.moveDown(0.2);
+        }
+        doc.moveDown(1);
+      });
+    } else {
+      doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
+      doc.moveDown(1);
+    }
 
-      const imagePathBase = join(__dirname, '..', 'uploads');
+    if (project.imagenes && project.imagenes.length > 0) {
+      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
+      doc.moveDown(1);
 
-      project.imagenes.forEach((img, index) => {
-        const fullImagePath = join(imagePathBase, img.url);
+      const imagePathBase = join(__dirname, '..', 'uploads');
 
-        if (fs.existsSync(fullImagePath)) {
-          doc.image(fullImagePath, {
-            fit: [500, 300],
-            align: 'center',
-            valign: 'center'
-          });
-          doc.moveDown(1);
-        } else {
-          //doc.fontSize(12).font('Helvetica').text(`Imagen ${index + 1}: Archivo no encontrado en el servidor.`);
-          //doc.moveDown(1);
-        }
-      });
-    } else {
-      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
-      //doc.moveDown(1);
-      //doc.fontSize(12).font('Helvetica').text('No hay imágenes asociadas a este proyecto.');
-      doc.moveDown(1);
-    }
-    doc.end();
-  }
+      project.imagenes.forEach((img, index) => {
+        const fullImagePath = join(imagePathBase, img.url);
+
+        if (fs.existsSync(fullImagePath)) {
+          doc.image(fullImagePath, {
+            fit: [500, 300],
+            align: 'center',
+            valign: 'center'
+          });
+          doc.moveDown(1);
+        } else {
+          //doc.fontSize(12).font('Helvetica').text(`Imagen ${index + 1}: Archivo no encontrado en el servidor.`);
+          //doc.moveDown(1);
+        }
+      });
+    } else {
+      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
+      //doc.moveDown(1);
+      //doc.fontSize(12).font('Helvetica').text('No hay imágenes asociadas a este proyecto.');
+      doc.moveDown(1);
+    }
+    doc.end();
+  }
 }
