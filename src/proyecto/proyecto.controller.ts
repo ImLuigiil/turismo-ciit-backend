@@ -36,7 +36,7 @@ const LOGO_IZQ_2_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL
 const FOOTER_TEXT = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
 // Posiciones ajustadas para evitar recursión (movido más arriba):
-const FOOTER_LINE_Y = 740; // Antes 740, ahora más arriba para seguridad
+const FOOTER_LINE_Y = 710; // Antes 740, ahora más arriba para seguridad
 const FOOTER_Y_POS = FOOTER_LINE_Y - 40; // Ahora 670
 const FOOTER_LINE_COLOR = '#C00000'; // Rojo
 const FOOTER_LINE_THICKNESS = 1;
@@ -438,7 +438,8 @@ async generateGeneralReport(@Res() res: Response) {
   // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
   doc.y = HEADER_MARGIN_BOTTOM; 
   
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
+  // **CAMBIO AQUÍ: Eliminamos align: 'center' para que el texto se alinee a la izquierda (por defecto)**
+  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'left' });
   doc.moveDown(2);
   
   const formatDate = (date: Date | null) => {
@@ -627,7 +628,8 @@ async generateGeneralReport(@Res() res: Response) {
     // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
     doc.y = HEADER_MARGIN_BOTTOM;
 
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
+    // **CAMBIO AQUÍ: Eliminamos align: 'center' para que el título se alinee a la izquierda (por defecto)**
+    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'left' });
     doc.moveDown(1);
 
     doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
