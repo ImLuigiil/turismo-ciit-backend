@@ -626,10 +626,9 @@ async generateGeneralReport(@Res() res: Response) {
     // --------------------------------------------------------
 
     // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
-    doc.y = HEADER_MARGIN_BOTTOM;
 
     // **CAMBIO AQUÍ: Eliminamos align: 'center' para que el título se alinee a la izquierda (por defecto)**
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'left' });
+    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
     doc.moveDown(1);
 
     doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
