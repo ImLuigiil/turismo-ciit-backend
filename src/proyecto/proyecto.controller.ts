@@ -35,9 +35,9 @@ const LOGO_IZQ_2_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL
 
 const FOOTER_TEXT = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
-// Nueva posición para el pie de página (más segura, aprox 52pt del borde inferior)
-const FOOTER_LINE_Y = 740; 
-const FOOTER_Y_POS = FOOTER_LINE_Y - 40; // Posición Y de los logos y texto (700)
+// Posiciones ajustadas para evitar recursión (movido más arriba):
+const FOOTER_LINE_Y = 710; // Antes 740, ahora más arriba para seguridad
+const FOOTER_Y_POS = FOOTER_LINE_Y - 40; // Ahora 670
 const FOOTER_LINE_COLOR = '#C00000'; // Rojo
 const FOOTER_LINE_THICKNESS = 1;
 const FOOTER_LOGO_SIZE = 30; // Tamaño pequeño para los logos del pie de página
