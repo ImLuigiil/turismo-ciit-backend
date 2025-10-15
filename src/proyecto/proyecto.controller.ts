@@ -438,8 +438,8 @@ async generateGeneralReport(@Res() res: Response) {
   // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
   doc.y = HEADER_MARGIN_BOTTOM; 
   
-  // **CAMBIO AQUÍ: Eliminamos align: 'center' para que el texto se alinee a la izquierda (por defecto)**
-  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'left' });
+  // Aseguramos alineación a la izquierda (50 es el margen por defecto)
+  doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', 50, doc.y, { align: 'left' });
   doc.moveDown(2);
   
   const formatDate = (date: Date | null) => {
@@ -626,15 +626,19 @@ async generateGeneralReport(@Res() res: Response) {
     // --------------------------------------------------------
 
     // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
+    doc.y = HEADER_MARGIN_BOTTOM;
 
-    // **CAMBIO AQUÍ: Eliminamos align: 'center' para que el título se alinee a la izquierda (por defecto)**
-    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, { align: 'center' });
+    // **AJUSTE CLAVE:** Anclamos el título principal a la coordenada X=50 para forzar alineación izquierda.
+    doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`, 50, doc.y, { align: 'left' });
     doc.moveDown(1);
 
-    doc.fontSize(14).font('Helvetica-Bold').text('Información General:');
+    // Anclamos el encabezado de sección a la coordenada X=50.
+    doc.fontSize(14).font('Helvetica-Bold').text('Información General:', 50, doc.y);
     doc.moveDown(1);
 
     doc.fontSize(12);
+    // Reiniciamos el cursor X a 50 antes de los detalles
+    doc.x = 50; 
 
     doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
         .font('Helvetica').text(`${project.idProyecto}`);
@@ -644,22 +648,27 @@ async generateGeneralReport(@Res() res: Response) {
     const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
     const color = getProgressColor(project.fechaInicio, project.fechaFinAprox, fase);
 
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Avance: ', { continued: true })
       .font('Helvetica').text(`Fase ${project.faseActual !== null ? project.faseActual : 'N/A'} (${avance}%)`);
     doc.moveDown(1);
     
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Descripción: ', { continued: true })
         .font('Helvetica').text(`${project.descripcion || 'N/A'}`);
     doc.moveDown(1);
 
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Comunidad: ', { continued: true })
         .font('Helvetica').text(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`);
     doc.moveDown(1);
 
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Población Beneficiada : ', { continued: true })
         .font('Helvetica').text(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
     doc.moveDown(1);
 
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Número de Capítulos: ', { continued: true })
         .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
     doc.moveDown(1);
@@ -671,36 +680,44 @@ async generateGeneralReport(@Res() res: Response) {
         return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
     };
 
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Fecha de Inicio: ', { continued: true })
         .font('Helvetica').text(`${formatDate(project.fechaInicio)}`);
     doc.moveDown(1);
 
+    doc.x = 50; 
     doc.font('Helvetica-Bold').text('Fecha Fin Aprox: ', { continued: true })
         .font('Helvetica').text(`${formatDate(project.fechaFinAprox)}`);
     doc.moveDown(1);
 
     if (project.justificacionFase) {
-      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:');
+        doc.x = 50; 
+      doc.fontSize(14).font('Helvetica-Bold').text('Justificación de Último Cambio de Fase:', 50, doc.y);
       doc.moveDown(1);
+        doc.x = 50; 
       doc.fontSize(12).font('Helvetica').text(project.justificacionFase);
       doc.moveDown(2);
     }
 
-    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:');
+    doc.x = 50; 
+    doc.fontSize(14).font('Helvetica-Bold').text('Personas Involucradas:', 50, doc.y);
     doc.moveDown(1);
     if (project.personasDirectorio && project.personasDirectorio.length > 0) {
       project.personasDirectorio.forEach(persona => {
         doc.fontSize(12);
+        doc.x = 50;
         doc.font('Helvetica-Bold').text('Nombre: ', { continued: true })
             .font('Helvetica').text(`${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`);
         doc.moveDown(0.2);
 
         if (persona.rolEnProyecto) {
+            doc.x = 50;
           doc.font('Helvetica-Bold').text('Rol: ', { continued: true })
               .font('Helvetica').text(`${persona.rolEnProyecto}`);
           doc.moveDown(0.2);
         }
         if (persona.contacto) {
+            doc.x = 50;
           doc.font('Helvetica-Bold').text('Contacto: ', { continued: true })
               .font('Helvetica').text(`${persona.contacto}`);
           doc.moveDown(0.2);
@@ -708,6 +725,7 @@ async generateGeneralReport(@Res() res: Response) {
         doc.moveDown(1);
       });
     } else {
+        doc.x = 50;
       doc.fontSize(12).font('Helvetica').text('No hay personas involucradas registradas.');
       doc.moveDown(1);
     }
