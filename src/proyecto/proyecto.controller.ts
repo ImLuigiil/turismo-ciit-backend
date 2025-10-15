@@ -36,7 +36,7 @@ const LOGO_IZQ_2_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL
 const FOOTER_TEXT = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
 // Posiciones ajustadas para evitar recursión (movido más arriba):
-const FOOTER_LINE_Y = 710; // Antes 740, ahora más arriba para seguridad
+const FOOTER_LINE_Y = 740; // Antes 740, ahora más arriba para seguridad
 const FOOTER_Y_POS = FOOTER_LINE_Y - 40; // Ahora 670
 const FOOTER_LINE_COLOR = '#C00000'; // Rojo
 const FOOTER_LINE_THICKNESS = 1;
