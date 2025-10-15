@@ -85,7 +85,6 @@ const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buff
     currentX += FOOTER_LOGO_SIZE + 30;
 
     // 2. Dibujar texto de dirección (Alineado a la derecha de los logos o en el centro)
-    // Corrección del error de tipo: se pasan las opciones directamente al método text()
     doc.fontSize(7) // Fuente pequeña para el pie de página
        .fillColor('#444444')
        .font('Helvetica')
@@ -95,7 +94,7 @@ const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buff
            logoY + 5, 
            { // Opciones de texto
                width: pageRightBound - currentX,
-               align: 'left' as const, // Se especifica el literal de cadena para compatibilidad con TextOptions
+               align: 'left' as const, 
                lineGap: 2 
            }
        );
@@ -110,7 +109,9 @@ const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buff
     doc.restore();
 
     // 4. Mover cursor Y para asegurar que el siguiente contenido no pegue con el footer
-    doc.y = lineY + 10;
+    // LÍNEA CORREGIDA: Ya no modificamos doc.y aquí para evitar la recursión. 
+    // addHeader ya reseteó doc.y al margen superior (100).
+    // doc.y = lineY + 10; 
 };
 // --- FIN FUNCIÓN REUTILIZABLE ---
 
