@@ -620,7 +620,7 @@ async generateGeneralReport(@Res() res: Response) {
 
     } catch (error) {
       console.error('Error al descargar los logos (reporte individual):', error.message);
-      doc.fontSize(10).text('Error al cargar logos y encabezado/pie de página.', 50, 50);
+      doc.fontSize(10).text('Error al cargar logos y encabezado/pie de página (504).', 50, 50);
       doc.y = 80; 
     }
     // --------------------------------------------------------
