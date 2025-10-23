@@ -23,3 +23,5 @@ export class ProyectoImagen {
   @JoinColumn({ name: 'proyecto_id_proyecto', referencedColumnName: 'idProyecto' })
   proyecto: Proyecto;
 }
+
+//Activacion del server 1.0
