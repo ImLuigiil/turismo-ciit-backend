@@ -19,7 +19,6 @@ export class ProyectoImagen {
   @Column({ name: 'proyecto_id_proyecto' }) 
   proyectoIdProyecto: number;
 
-  // Relación Many-to-One con Proyecto
   @ManyToOne(() => Proyecto, proyecto => proyecto.imagenes, { onDelete: 'CASCADE', onUpdate: 'NO ACTION' })
   @JoinColumn({ name: 'proyecto_id_proyecto', referencedColumnName: 'idProyecto' })
   proyecto: Proyecto;

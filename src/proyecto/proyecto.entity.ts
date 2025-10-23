@@ -52,8 +52,6 @@ export class Proyecto {
 
   @OneToMany(() => PersonaProyecto, persona => persona.proyecto, { cascade: true })
   personasDirectorio: PersonaProyecto[];
-    // --- CÓDIGO AÑADIDO: Relación con el Historial ---
   @OneToMany(() => HistorialFase, historialFase => historialFase.proyecto)
   historialFases: HistorialFase[];
-    // --- FIN CÓDIGO AÑADIDO ---
 }

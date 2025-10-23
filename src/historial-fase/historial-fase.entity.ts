@@ -18,7 +18,7 @@ export class HistorialFase {
   @Column({ name: 'fecha_registro', type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   fechaRegistro: Date;
 
-  // Relación Muchos a Uno: Un historial pertenece a un solo proyecto
+
   @ManyToOne(() => Proyecto, proyecto => proyecto.historialFases, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'proyecto_id_proyecto' })
   proyecto: Proyecto;

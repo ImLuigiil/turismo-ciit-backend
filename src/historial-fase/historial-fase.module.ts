@@ -6,6 +6,6 @@ import { HistorialFaseService } from './historial-fase.service';
 @Module({
   imports: [TypeOrmModule.forFeature([HistorialFase])],
   providers: [HistorialFaseService],
-  exports: [HistorialFaseService], // Exportamos para que ProyectoService pueda usarlo
+  exports: [HistorialFaseService],
 })
 export class HistorialFaseModule {}

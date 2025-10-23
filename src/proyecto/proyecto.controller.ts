@@ -13,7 +13,6 @@ import * as fs from 'fs';
 import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 
-// --- CONSTANTES ENCABEZADO ---
 const SEP_LOGO_URL = 'https://www.gob.mx/cms/uploads/action_program/main_image/3180/post_logo_educ.jpg';
 const TECNM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
 
@@ -25,36 +24,28 @@ const LOGO_TECNM_WIDTH = 110;
 const LINE_COLOR = '#FFD700'; 
 const LINE_THICKNESS = 3;
 const LOGO_SPACING = 15; 
-// --- FIN CONSTANTES ENCABEZADO ---
 
-
-// --- NUEVAS CONSTANTES PIE DE PÁGINA (CORREGIDAS) ---
-// Logos al lado izquierdo del texto
 const LOGO_IZQ_1_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_ad1TRzUNczr7qEP260D8gu4szFzh_we59w&s'; 
 const LOGO_IZQ_2_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL4am0BuytAGl36oNx6laPZkToh0tzlJveOg&s';
 
 const FOOTER_TEXT = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
 
-// Posiciones ajustadas para evitar recursión (movido más arriba):
-const FOOTER_LINE_Y = 710; // Antes 740, ahora más arriba para seguridad
-const FOOTER_Y_POS = FOOTER_LINE_Y - 40; // Ahora 670
-const FOOTER_LINE_COLOR = '#C00000'; // Rojo
+
+const FOOTER_LINE_Y = 710;
+const FOOTER_Y_POS = FOOTER_LINE_Y - 40; 
+const FOOTER_LINE_COLOR = '#C00000';
 const FOOTER_LINE_THICKNESS = 1;
-const FOOTER_LOGO_SIZE = 30; // Tamaño pequeño para los logos del pie de página
-// --- FIN CONSTANTES PIE DE PÁGINA ---
+const FOOTER_LOGO_SIZE = 30;
 
 
-// --- FUNCIÓN REUTILIZABLE PARA EL ENCABEZADO ---
 const addHeader = (doc: PDFKit.PDFDocument, sepBuffer: Buffer, tecNmBuffer: Buffer) => {
-    const margin = 50; // Margen izquierdo
+    const margin = 50;
     const lineX = margin + LOGO_SEP_WIDTH + LOGO_SPACING;
     const lineYStart = HEADER_Y_POS - 5;
     const lineYEnd = HEADER_Y_POS + LOGO_HEIGHT + 5;
 
-    // 1. Logo SEP (Izquierda - Primer logo)
     doc.image(sepBuffer, margin, HEADER_Y_POS, { fit: [LOGO_SEP_WIDTH, LOGO_HEIGHT] });
 
-    // 2. Línea Separadora Vertical Amarilla
     doc.save()
         .moveTo(lineX, lineYStart)
         .lineTo(lineX, lineYEnd)
@@ -64,44 +55,37 @@ const addHeader = (doc: PDFKit.PDFDocument, sepBuffer: Buffer, tecNmBuffer: Buff
 
     const tecNmX = lineX + LOGO_SPACING;
 
-    // 3. Logo TecNM (Derecha de la línea)
     doc.image(tecNmBuffer, tecNmX, HEADER_Y_POS, { fit: [LOGO_TECNM_WIDTH, LOGO_HEIGHT] });
 
-    // 4. Margen de Seguridad: Mover el cursor Y debajo del encabezado
     doc.y = HEADER_MARGIN_BOTTOM;
 };
-// --- FIN FUNCIÓN REUTILIZABLE ---
 
-// --- FUNCIÓN REUTILIZABLE PARA EL PIE DE PÁGINA ---
 const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buffer: Buffer) => {
     const margin = 50;
     const pageRightBound = doc.page.width - margin;
     let currentX = margin;
     const logoY = FOOTER_Y_POS;
 
-    // 1. Dibujar logos izquierdos
     doc.image(logoIzq1Buffer, currentX, logoY, { fit: [FOOTER_LOGO_SIZE, FOOTER_LOGO_SIZE] });
     currentX += FOOTER_LOGO_SIZE + 10;
 
     doc.image(logoIzq2Buffer, currentX, logoY, { fit: [FOOTER_LOGO_SIZE, FOOTER_LOGO_SIZE] });
     currentX += FOOTER_LOGO_SIZE + 30;
 
-    // 2. Dibujar texto de dirección (Alineado a la derecha de los logos o en el centro)
-    doc.fontSize(7) // Fuente pequeña para el pie de página
+    doc.fontSize(7)
        .fillColor('#444444')
        .font('Helvetica')
        .text(
            FOOTER_TEXT, 
            currentX, 
            logoY + 5, 
-           { // Opciones de texto
+           { 
                width: pageRightBound - currentX,
                align: 'left' as const, 
                lineGap: 2 
            }
        );
 
-    // 3. Dibujar línea roja horizontal
     const lineY = FOOTER_LINE_Y;
     doc.save()
         .moveTo(margin, lineY)
@@ -110,9 +94,8 @@ const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buff
         .stroke(FOOTER_LINE_COLOR);
     doc.restore();
 
-    // Importante: No tocamos doc.y aquí para evitar la recursión de adición de página
 };
-// --- FIN FUNCIÓN REUTILIZABLE ---
+
 
 
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
@@ -335,17 +318,13 @@ export class ProyectoController {
   async remove(@Param('id') id: string) {
     const proyectoId = +id;
     
-    // 1. Obtener el proyecto
     const proyecto = await this.proyectoService.findOne(proyectoId);
 
     if (!proyecto) {
         throw new NotFoundException(`Proyecto con ID ${proyectoId} no encontrado.`);
     }
 
-    // 2. Validación de Fase antes de Eliminar
-    // Usamos el operador de coalescencia nula (??) para asegurar que si faseActual es null/undefined,
-    // se trate como 1 para la validación.
-    const faseActualSegura = proyecto.faseActual ?? 1; // Asume Fase 1 si es null/undefined
+    const faseActualSegura = proyecto.faseActual ?? 1;
 
     if (faseActualSegura > 1) {
         throw new BadRequestException('El proyecto no puede ser eliminado porque ya ha iniciado la Fase 2 o superior. Solo los proyectos en Fase 1 pueden ser borrados.');
@@ -405,7 +384,6 @@ async generateGeneralReport(@Res() res: Response) {
   res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
   doc.pipe(res);
 
-  // --- PASO 1: DESCARGAR Y PREPARAR LOGOS ---
   try {
     const [sepResponse, tecNmResponse, logoIzq1Response, logoIzq2Response] = await Promise.all([
       axios.get(SEP_LOGO_URL, { responseType: 'arraybuffer' }),
@@ -418,13 +396,11 @@ async generateGeneralReport(@Res() res: Response) {
     const logoIzq1Buffer = Buffer.from(logoIzq1Response.data);
     const logoIzq2Buffer = Buffer.from(logoIzq2Response.data);
   
-    // --- PASO 2: ADJUNTAR ENCABEZADO Y PIE DE PÁGINA AL EVENTO pageAdded ---
     doc.on('pageAdded', () => {
       addHeader(doc, sepImageBuffer, tecNmImageBuffer);
-      addFooter(doc, logoIzq1Buffer, logoIzq2Buffer); // Agregamos el footer en cada nueva página
+      addFooter(doc, logoIzq1Buffer, logoIzq2Buffer);
     });
 
-    // --- PASO 3: DIBUJAR ENCABEZADO Y PIE DE PÁGINA DE LA PRIMERA PÁGINA ---
     addHeader(doc, sepImageBuffer, tecNmImageBuffer);
     addFooter(doc, logoIzq1Buffer, logoIzq2Buffer);
 
@@ -433,12 +409,9 @@ async generateGeneralReport(@Res() res: Response) {
     doc.fontSize(10).text('Error al cargar logos y encabezado/pie de página.', 50, 50);
     doc.y = 80; 
   }
-  // --------------------------------------------------------
 
-  // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
   doc.y = HEADER_MARGIN_BOTTOM; 
   
-  // Aseguramos alineación a la izquierda (50 es el margen por defecto)
   doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
   doc.moveDown(2);
   
@@ -458,7 +431,6 @@ async generateGeneralReport(@Res() res: Response) {
 
       const yPos = doc.y;
 
-      // Check if space is too close to footer and add page if necessary
       if (yPos > FOOTER_Y_POS - 70) {
         doc.addPage();
         doc.y = HEADER_MARGIN_BOTTOM;
@@ -499,7 +471,7 @@ async generateGeneralReport(@Res() res: Response) {
       doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
       if (doc.y > FOOTER_Y_POS - 70) {
         doc.addPage();
-        doc.y = HEADER_MARGIN_BOTTOM; // Reset y for new page, respetando el nuevo encabezado
+        doc.y = HEADER_MARGIN_BOTTOM;
       }
     });
   }
@@ -595,7 +567,6 @@ async generateGeneralReport(@Res() res: Response) {
 
     doc.pipe(res);
 
-    // --- PASO 1: DESCARGAR Y PREPARAR LOGOS ---
     try {
       const [sepResponse, tecNmResponse, logoIzq1Response, logoIzq2Response] = await Promise.all([
         axios.get(SEP_LOGO_URL, { responseType: 'arraybuffer' }),
@@ -608,13 +579,11 @@ async generateGeneralReport(@Res() res: Response) {
       const logoIzq1Buffer = Buffer.from(logoIzq1Response.data);
       const logoIzq2Buffer = Buffer.from(logoIzq2Response.data);
     
-      // --- PASO 2: ADJUNTAR ENCABEZADO Y PIE DE PÁGINA AL EVENTO pageAdded ---
       doc.on('pageAdded', () => {
         addHeader(doc, sepImageBuffer, tecNmImageBuffer);
         addFooter(doc, logoIzq1Buffer, logoIzq2Buffer);
       });
 
-      // --- PASO 3: DIBUJAR ENCABEZADO Y PIE DE PÁGINA DE LA PRIMERA PÁGINA ---
       addHeader(doc, sepImageBuffer, tecNmImageBuffer);
       addFooter(doc, logoIzq1Buffer, logoIzq2Buffer);
 
@@ -623,21 +592,15 @@ async generateGeneralReport(@Res() res: Response) {
       doc.fontSize(10).text('Error al cargar logos y encabezado/pie de página (504).', 50, 50);
       doc.y = 80; 
     }
-    // --------------------------------------------------------
-
-    // El texto del reporte comienza automáticamente en doc.y = HEADER_MARGIN_BOTTOM
     doc.y = HEADER_MARGIN_BOTTOM;
 
-    // **AJUSTE CLAVE:** Anclamos el título principal a la coordenada X=50 para forzar alineación izquierda.
     doc.fontSize(14).font('Helvetica-Bold').text(`Reporte del Proyecto: ${project.nombre}`,{ align: 'center' });
     doc.moveDown(1);
 
-    // Anclamos el encabezado de sección a la coordenada X=50.
     doc.fontSize(14).font('Helvetica-Bold').text('Información General:', 50, doc.y);
     doc.moveDown(1);
 
     doc.fontSize(12);
-    // Reiniciamos el cursor X a 50 antes de los detalles
     doc.x = 50; 
 
     doc.font('Helvetica-Bold').text('ID del Proyecto: ', { continued: true })
@@ -673,7 +636,6 @@ async generateGeneralReport(@Res() res: Response) {
         .font('Helvetica').text(`${project.noCapitulos || 'N/A'}`);
     doc.moveDown(1);
 
-    // Ajustamos la función formatDate para aceptar 'Date | null'
     const formatDate = (date: Date | null) => {
         if (!date) return 'N/A';
         const d = new Date(date);
@@ -731,7 +693,6 @@ async generateGeneralReport(@Res() res: Response) {
     }
 
     if (project.imagenes && project.imagenes.length > 0) {
-      //doc.fontSize(14).font('Helvetica-Bold').text('Imágenes del Proyecto:');
       doc.moveDown(1);
 
       const imagePathBase = join(__dirname, '..', 'uploads');

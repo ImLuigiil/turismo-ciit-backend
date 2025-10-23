@@ -55,10 +55,9 @@ export class ProyectoService {
       relations: [
         'comunidad',
         'imagenes',
-        'historialFases', // <-- ESTA LÍNEA DEBE ASEGURARSE DE ESTAR
+        'historialFases', 
         'personasDirectorio'
       ],
-      // Ordenar el historial por fase para la visualización cronológica
       order: {
         historialFases: {
           faseNumero: 'ASC', 
@@ -136,12 +135,9 @@ export class ProyectoService {
       relations: [
         'comunidad',
         'imagenes',
-        // --- CÓDIGO AÑADIDO/MODIFICADO ---
         'historialFases', 
-        // --- FIN CÓDIGO AÑADIDO/MODIFICADO ---
         'personasDirectorio'
       ],
-      // Ordenar el historial por fase para que se vea cronológicamente
       order: {
         historialFases: {
           fechaRegistro: 'ASC',
@@ -154,7 +150,6 @@ export class ProyectoService {
     }
     return project;
   }
-  // --- NUEVO MÉTODO: Concluir Fase ---
 async concluirFase(
     id: number, 
     justificacion: string, 
@@ -172,7 +167,6 @@ async concluirFase(
       throw new BadRequestException('El proyecto ya ha alcanzado la fase final (7)');
     }
     
-    // 1. Crear el registro en la nueva tabla de historial
     await this.historialFaseService.create({
       proyectoIdProyecto: id,
       faseNumero: proyecto.faseActual,
@@ -180,7 +174,6 @@ async concluirFase(
       documentoUrl: documentoUrl,
     });
 
-    // 2. Actualizar el proyecto principal con la nueva fase
     proyecto.faseActual = nextFase;
     
     return this.proyectosRepository.save(proyecto);
