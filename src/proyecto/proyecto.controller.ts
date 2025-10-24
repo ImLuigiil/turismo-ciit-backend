@@ -35,8 +35,8 @@ const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
 const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 
 // Constantes para el gráfico
-const CHART_WIDTH = 700;
-const CHART_HEIGHT = 400;
+const CHART_WIDTH = 875;
+const CHART_HEIGHT = 500;
 const CHART_X = START_X + 100; 
 const CHART_Y_OFFSET = 30; 
 const DPI_SCALE = 4; // Factor de escala para calidad HD
@@ -441,7 +441,7 @@ export class ProyectoController {
                         color: TEXT_COLOR,
                         maxWidth: width - START_X * 2,
                     });
-                    currentY -= LINE_SPACING_SMALL*2;
+                    currentY -= LINE_SPACING_SMALL*2.2;
                     
                     // Avance y Fase
                     page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
