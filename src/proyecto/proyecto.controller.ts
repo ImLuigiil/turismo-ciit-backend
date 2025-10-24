@@ -7,21 +7,20 @@ import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
-// Importaciones para PDF
+// Importaciones para PDF y Gráficos
 import * as PDFKit from 'pdfkit'; 
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFImage } from 'pdf-lib'; 
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
-// Importación del motor de gráficos (DEBES INSTALARLA)
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas'; 
 
 // Configuración de rutas (VERIFICA ESTA RUTA EN TU PROYECTO)
 const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
 
 // =========================================================================
-// CONSTANTES Y FUNCIONES AUXILIARES (AJUSTADAS)
+// CONSTANTES Y FUNCIONES AUXILIARES 
 // =========================================================================
 
 // Coordenadas y estilos para estampar el contenido en la plantilla
@@ -39,7 +38,7 @@ const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 const CHART_WIDTH = 350;
 const CHART_HEIGHT = 200;
 const CHART_X = START_X + 100; 
-const CHART_Y_OFFSET = 30; // Espacio para el título del gráfico
+const CHART_Y_OFFSET = 30; 
 
 // (Funciones auxiliares de cálculo...)
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
@@ -128,9 +127,14 @@ const formatDate = (date: Date | null) => {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
-// --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS ---
+// --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS CON MEJORA DE CALIDAD ---
 const generatePieChartBuffer = async (data: number[], labels: string[], colors: string[]): Promise<Buffer> => {
-    const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: CHART_WIDTH, height: CHART_HEIGHT });
+    // Usamos devicePixelRatio: 3 para generar una imagen de alta resolución (HD)
+    const chartJSNodeCanvas = new ChartJSNodeCanvas({ 
+        width: CHART_WIDTH, 
+        height: CHART_HEIGHT,
+        devicePixelRatio: 3 
+    } as any); // <-- FIX APLICADO: Casting a 'any' para evitar error de TypeScript
     
     const configuration = {
         type: 'doughnut' as const,
@@ -158,15 +162,13 @@ const generatePieChartBuffer = async (data: number[], labels: string[], colors: 
                 }
             },
             layout: {
-                padding: 10 // Agregado padding para evitar que la leyenda choque con el borde
+                padding: 10
             }
         }
     };
     
-    // Genera la imagen y la devuelve como Buffer
     return chartJSNodeCanvas.renderToBuffer(configuration, 'image/png');
 };
-
 
 // =========================================================================
 // FIN CONSTANTES Y FUNCIONES AUXILIARES
@@ -176,8 +178,6 @@ const generatePieChartBuffer = async (data: number[], labels: string[], colors: 
 @Controller('proyectos')
 export class ProyectoController {
     constructor(private readonly proyectoService: ProyectoService) {}
-
-    // ... (CRUD methods omitted for brevity) ...
 
     @Get()
     findAll() {
@@ -363,7 +363,7 @@ export class ProyectoController {
     }
 
     // =========================================================================
-    // REPORTE GENERAL (CON GRÁFICA DE PASTEL COMO IMAGEN)
+    // REPORTE GENERAL (CON GRÁFICA DE PASTEL COMO IMAGEN HD)
     // =========================================================================
 
     @Get('report/general')
@@ -387,7 +387,7 @@ export class ProyectoController {
             
             const TEXT_COLOR = rgb(0, 0, 0);
 
-            // 1. Configurar la primera página
+            // 1. Configurar la primera página (USANDO ASIGNACIÓN CLÁSICA PARA EVITAR ERROR 2488)
             const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
             let page: PDFPage = firstPageResult[0];
             let currentY: number = firstPageResult[1];
@@ -492,7 +492,7 @@ export class ProyectoController {
             const chartLabels = ['En Tiempo / Concluidos', 'Ligeramente Atrasados', 'Muy Atrasados / Vencidos', 'Sin Fechas'];
             const chartColors = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
             
-            // 3.2 Generar Buffer de la imagen
+            // 3.2 Generar Buffer de la imagen (¡En HD!)
             const chartBuffer = await generatePieChartBuffer(chartData, chartLabels, chartColors);
             
             // 3.3 Incrustar la imagen en el PDF
@@ -515,7 +515,7 @@ export class ProyectoController {
             const chartDrawY = currentY - CHART_HEIGHT; 
             
             page.drawImage(embeddedChart, {
-                x: CHART_X - (CHART_WIDTH / 2) + 50, // Centrar la imagen en la parte central-derecha de la página
+                x: CHART_X - (CHART_WIDTH / 2) + 50, 
                 y: chartDrawY,
                 width: CHART_WIDTH,
                 height: CHART_HEIGHT,
