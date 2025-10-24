@@ -402,7 +402,7 @@ export class ProyectoController {
                 maxWidth: width - START_X * 2,
                 color: TEXT_COLOR
             });
-            currentY -= LINE_SPACING * 2;
+            currentY -= LINE_SPACING * 1.5;
             
             if (proyectos.length === 0) {
                 page.drawText('No hay proyectos registrados en el sistema.', { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
