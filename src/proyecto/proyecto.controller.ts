@@ -35,8 +35,8 @@ const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
 const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 
 // Constantes para el gráfico
-const CHART_WIDTH = 250;
-const CHART_HEIGHT = 100;
+const CHART_WIDTH = 350;
+const CHART_HEIGHT = 200;
 const CHART_X = START_X + 100; 
 const CHART_Y_OFFSET = 30; 
 
@@ -129,12 +129,12 @@ const formatDate = (date: Date | null) => {
 
 // --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS CON MEJORA DE CALIDAD ---
 const generatePieChartBuffer = async (data: number[], labels: string[], colors: string[]): Promise<Buffer> => {
-    // Usamos devicePixelRatio: 3 para generar una imagen de alta resolución (HD)
+    // Usamos devicePixelRatio: 4 para generar una imagen de muy alta resolución (HD)
     const chartJSNodeCanvas = new ChartJSNodeCanvas({ 
         width: CHART_WIDTH, 
         height: CHART_HEIGHT,
-        devicePixelRatio: 3 
-    } as any); // <-- FIX APLICADO: Casting a 'any' para evitar error de TypeScript
+        devicePixelRatio: 4 // Aumentado a 4 para mayor calidad.
+    } as any); 
     
     const configuration = {
         type: 'doughnut' as const,
