@@ -27,7 +27,7 @@ const START_X = 90; // Margen izquierdo
 const INDENT_X_SMALL = 85; // <--- LA CONSTANTE QUE CAUSA PROBLEMAS
 const INDENT_X_BIG = 150; // Indentación mayor
 const INDENT_X_VALUE = 240; // Posición de los valores
-const CONTENT_START_Y = 665; // Posición Y de inicio
+const CONTENT_START_Y = 660; // Posición Y de inicio
 const CONTENT_END_Y = 140; // Límite inferior
 const LINE_SPACING = 25; // Espaciado entre bloques principales
 const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
@@ -560,23 +560,23 @@ export class ProyectoController {
             
             // ID del Proyecto
             firstPage.drawText('ID del Proyecto: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.idProyecto}`, { x: INDENT_X_VALUE - 50, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.idProyecto}`, { x: INDENT_X_VALUE - 55, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
             // Avance
             const fase = project.faseActual !== null ? project.faseActual : 1;
             const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
             firstPage.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: INDENT_X_VALUE - 55, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
             // Fechas
             firstPage.drawText('Fecha Inicio: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${formatDate(project.fechaInicio)}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${formatDate(project.fechaInicio)}`, { x: INDENT_X_VALUE - 55, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
             firstPage.drawText('Fecha Fin Aprox: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${formatDate(project.fechaFinAprox)}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${formatDate(project.fechaFinAprox)}`, { x: INDENT_X_VALUE - 55, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM * 1.5;
 
 
@@ -584,7 +584,7 @@ export class ProyectoController {
             firstPage.drawText('Descripción: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             
             const descriptionText = project.descripcion || 'N/A';
-            const descriptionWrapWidth = textWidth - INDENT_X_VALUE + START_X; // Ancho disponible desde el valor
+            const descriptionWrapWidth = textWidth - (INDENT_X_VALUE-55) + START_X; // Ancho disponible desde el valor
 
             const charsPerLine = Math.floor(descriptionWrapWidth / 5.5);
             const descriptionLines = descriptionText.match(new RegExp(`.{1,${charsPerLine}}`, 'g')) || [descriptionText]; 
@@ -608,11 +608,11 @@ export class ProyectoController {
             
             // Comunidad y Población
             firstPage.drawText('Comunidad: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: INDENT_X_VALUE -55, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
             
             firstPage.drawText('Población Beneficiada: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: INDENT_X_VALUE + 40, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: INDENT_X_VALUE - 15, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING * 2;
 
             // Personas Involucradas
