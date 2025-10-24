@@ -441,7 +441,7 @@ export class ProyectoController {
                         color: TEXT_COLOR,
                         maxWidth: width - START_X * 2,
                     });
-                    currentY -= LINE_SPACING_SMALL*1;
+                    currentY -= LINE_SPACING_SMALL*2;
                     
                     // Avance y Fase
                     page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
