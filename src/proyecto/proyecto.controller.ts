@@ -39,6 +39,7 @@ const CHART_WIDTH = 350;
 const CHART_HEIGHT = 200;
 const CHART_X = START_X + 100; 
 const CHART_Y_OFFSET = 30; 
+const DPI_SCALE = 4; // Factor de escala para calidad HD
 
 // (Funciones auxiliares de cálculo...)
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
@@ -127,38 +128,47 @@ const formatDate = (date: Date | null) => {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
-// --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS CON MEJORA DE CALIDAD ---
-const generatePieChartBuffer = async (data: number[], labels: string[], colors: string[]): Promise<Buffer> => {
+// --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS (Bar Chart) ---
+const generateBarChartBuffer = async (data: number[], labels: string[], colors: string[]): Promise<Buffer> => {
     // Usamos devicePixelRatio: 4 para generar una imagen de muy alta resolución (HD)
     const chartJSNodeCanvas = new ChartJSNodeCanvas({ 
         width: CHART_WIDTH, 
         height: CHART_HEIGHT,
-        devicePixelRatio: 4 // Aumentado a 4 para mayor calidad.
+        devicePixelRatio: 4 
     } as any); 
     
     const configuration = {
-        type: 'doughnut' as const,
+        type: 'bar' as const, // CAMBIO CLAVE: Tipo 'bar'
         data: {
             labels: labels,
             datasets: [{
+                label: 'Cantidad de Proyectos',
                 data: data,
                 backgroundColor: colors,
-                hoverOffset: 4
+                borderColor: colors.map(c => c + 'CC'),
+                borderWidth: 1
             }]
         },
         options: {
             responsive: false,
             plugins: {
                 legend: {
-                    position: 'right' as const,
-                    labels: {
-                        font: { size: 10 }
-                    }
+                    display: false, 
                 },
                 title: {
                     display: true,
-                    text: 'Resumen de Avance de Proyectos',
-                    font: { size: 12 }
+                    text: 'Resumen de Proyectos por Estado',
+                    font: { size: 14 }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: { display: true, text: 'N° Proyectos' }
+                },
+                x: {
+                    display: true,
+                    title: { display: false }
                 }
             },
             layout: {
@@ -363,7 +373,7 @@ export class ProyectoController {
     }
 
     // =========================================================================
-    // REPORTE GENERAL (CON GRÁFICA DE PASTEL COMO IMAGEN HD)
+    // REPORTE GENERAL (CON GRÁFICA DE BARRAS COMO IMAGEN HD Y PORCENTAJE EN BARRAS)
     // =========================================================================
 
     @Get('report/general')
@@ -420,7 +430,7 @@ export class ProyectoController {
                         currentY = newPageResult[1] - LINE_SPACING;
                     }
                     
-                    currentY -= LINE_SPACING * 2;
+                    currentY -= LINE_SPACING * 1.5;
 
                     // Nombre del proyecto
                     page.drawText(`${index + 1}. ${proyecto.nombre}`, { 
@@ -435,7 +445,7 @@ export class ProyectoController {
                     
                     // Avance y Fase
                     page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
-                    page.drawText(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'} (${avance}%)`, { x: START_X + 50, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
+                    page.drawText(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`, { x: START_X + 50, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
                     
                     // Barra de Progreso
                     const progressBarWidth = 150;
@@ -467,12 +477,21 @@ export class ProyectoController {
                         height: progressBarHeight,
                         color: barColor,
                     });
+
+                    // DIBUJAR PORCENTAJE (NUEVA LÍNEA)
+                    page.drawText(`${avance}%`, {
+                        x: progressX + progressBarWidth + 10, // 10 unidades a la derecha de la barra
+                        y: progressY + 0.5, // Centrado verticalmente
+                        font: helveticaBoldFont,
+                        size: 8,
+                        color: TEXT_COLOR,
+                    });
                     
                     currentY -= LINE_SPACING_SMALL;
                 });
             }
 
-            // 3. GENERACIÓN E INCRUSTACIÓN DEL GRÁFICO DE PASTEL
+            // 3. GENERACIÓN E INCRUSTACIÓN DEL GRÁFICO DE BARRAS
             
             // Lógica del conteo de colores
             let greenCount = 0; let yellowCount = 0; let redCount = 0; let greyCount = 0;
@@ -493,7 +512,7 @@ export class ProyectoController {
             const chartColors = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
             
             // 3.2 Generar Buffer de la imagen (¡En HD!)
-            const chartBuffer = await generatePieChartBuffer(chartData, chartLabels, chartColors);
+            const chartBuffer = await generateBarChartBuffer(chartData, chartLabels, chartColors);
             
             // 3.3 Incrustar la imagen en el PDF
             let embeddedChart: PDFImage;
@@ -515,10 +534,10 @@ export class ProyectoController {
             const chartDrawY = currentY - CHART_HEIGHT; 
             
             page.drawImage(embeddedChart, {
-                x: CHART_X - (CHART_WIDTH / 2) + 50, 
+                x: START_X, // Dibujado desde el margen izquierdo
                 y: chartDrawY,
-                width: CHART_WIDTH,
-                height: CHART_HEIGHT,
+                width: 500, // Usar un ancho mayor para el gráfico de barras (ajusta según tus constantes CHART_WIDTH/HEIGHT)
+                height: 250,
             });
             
             // 3.5 Actualizar posición Y después del gráfico
