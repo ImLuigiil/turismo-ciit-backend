@@ -594,7 +594,7 @@ export class ProyectoController {
                 if (currentY < CONTENT_END_Y + LINE_SPACING) break; 
                 
                 firstPage.drawText(line.trim(), {
-                    x: currentXDesc - 58, 
+                    x: currentXDesc - 63, 
                     y: currentY,
                     font: helveticaFont,
                     size: 11,
