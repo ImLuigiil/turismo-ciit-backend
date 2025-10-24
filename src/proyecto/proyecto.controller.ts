@@ -546,7 +546,7 @@ export class ProyectoController {
                 maxWidth: textWidth,
                 color: TEXT_COLOR,
             });
-            currentY -= LINE_SPACING * 2.5;
+            currentY -= LINE_SPACING * 2.7;
 
             // Información General
             firstPage.drawText('Información General:', { 
@@ -560,7 +560,7 @@ export class ProyectoController {
             
             // ID del Proyecto
             firstPage.drawText('ID del Proyecto: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.idProyecto}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.idProyecto}`, { x: INDENT_X_VALUE - 5, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
             // Avance
