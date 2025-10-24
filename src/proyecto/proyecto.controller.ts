@@ -35,8 +35,8 @@ const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
 const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 
 // Constantes para el gráfico
-const CHART_WIDTH = 350;
-const CHART_HEIGHT = 200;
+const CHART_WIDTH = 175;
+const CHART_HEIGHT = 100;
 const CHART_X = START_X + 100; 
 const CHART_Y_OFFSET = 30; 
 const DPI_SCALE = 4; // Factor de escala para calidad HD
@@ -412,7 +412,7 @@ export class ProyectoController {
                 maxWidth: width - START_X * 2,
                 color: TEXT_COLOR
             });
-            currentY -= LINE_SPACING * 2;
+            currentY -= LINE_SPACING * 1;
             
             if (proyectos.length === 0) {
                 page.drawText('No hay proyectos registrados en el sistema.', { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
