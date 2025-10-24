@@ -567,7 +567,7 @@ export class ProyectoController {
             const fase = project.faseActual !== null ? project.faseActual : 1;
             const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
             firstPage.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: INDENT_X_VALUE - 90, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: INDENT_X_VALUE - 97, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
             // Fechas
