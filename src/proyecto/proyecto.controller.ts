@@ -16,7 +16,7 @@ import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 
 // Configuración de rutas (VERIFICA ESTA RUTA EN TU PROYECTO)
-const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hoja_membretada_2025_formato.pdf');
+const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
 
 // =========================================================================
 // CONSTANTES Y FUNCIONES AUXILIARES (AJUSTADAS)
