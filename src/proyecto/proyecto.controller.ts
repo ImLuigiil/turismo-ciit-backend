@@ -8,7 +8,7 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
 // Importaciones para PDF
-import * as PDFKit from 'pdfkit';
+import * as PDFKit from 'pdfkit'; 
 import { PDFDocument, StandardFonts, rgb, PDFPage } from 'pdf-lib'; 
 import { Response } from 'express';
 import * as fs from 'fs';
@@ -16,22 +16,23 @@ import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 
 // Configuración de rutas (VERIFICA ESTA RUTA EN TU PROYECTO)
-const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
+const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hoja_membretada_2025_formato.pdf');
 
 // =========================================================================
-// CONSTANTES Y FUNCIONES AUXILIARES
+// CONSTANTES Y FUNCIONES AUXILIARES (AJUSTADAS)
 // =========================================================================
 
 // Coordenadas y estilos para estampar el contenido en la plantilla
-const START_X = 90;
-const INDENT_X_SMALL = 85;
-const INDENT_X_BIG = 150;
-const CONTENT_START_Y = 630;
-const CONTENT_END_Y = 140;
-const LINE_SPACING = 25;
-const LINE_SPACING_SMALL = 18;
+const START_X = 90; // Margen izquierdo
+const INDENT_X_SMALL = 85; // <--- LA CONSTANTE QUE CAUSA PROBLEMAS
+const INDENT_X_BIG = 150; // Indentación mayor
+const INDENT_X_VALUE = 240; // Posición de los valores
+const CONTENT_START_Y = 750; // Posición Y de inicio
+const CONTENT_END_Y = 140; // Límite inferior
+const LINE_SPACING = 25; // Espaciado entre bloques principales
+const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
+const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 
-// (Las funciones getPhaseSchedule, calculateTimeBasedProgress, y calcularAvance se mantienen sin cambios)
 
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
     if (!fechaInicio || !fechaFinAprox) return [];
@@ -312,7 +313,7 @@ export class ProyectoController {
     }
 
     // =========================================================================
-    // REPORTE GENERAL (USA HOJA MEMBRETADA Y MÚLTIPLES PÁGINAS)
+    // REPORTE GENERAL (USA HOJA MEMBRETADA, MÚLTIPLES PÁGINAS Y RESUMEN VISUAL)
     // =========================================================================
 
     @Get('report/general')
@@ -336,7 +337,7 @@ export class ProyectoController {
             
             const TEXT_COLOR = rgb(0, 0, 0);
 
-            // 1. Configurar la primera página (CORRECCIÓN DE ERROR DE DESTRUCTURING)
+            // 1. Configurar la primera página (USANDO ASIGNACIÓN CLÁSICA PARA EVITAR ERROR 2488)
             const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
             let page: PDFPage = firstPageResult[0];
             let currentY: number = firstPageResult[1];
@@ -452,22 +453,29 @@ export class ProyectoController {
             });
             currentY -= LINE_SPACING;
 
-            // Leyenda del resumen
-            page.drawText(`Total de Proyectos: ${totalProjects}`, { x: START_X, y: currentY, font: helveticaBoldFont, size: 11, color: TEXT_COLOR });
-            currentY -= LINE_SPACING_SMALL;
+            // ⚠️ IMPLEMENTACIÓN DE LEYENDA VISUAL SIMPLE (SUSTITUTO DEL GRÁFICO DE PASTEL)
+            const legendBlockSize = 8;
+            let legendY = currentY;
+
+            page.drawText(`Total de Proyectos: ${totalProjects}`, { x: START_X, y: legendY, font: helveticaBoldFont, size: 11, color: TEXT_COLOR });
+            legendY -= LINE_SPACING_SMALL;
 
             if (greenCount > 0) {
-                page.drawText(`• En Tiempo / Concluidos: ${greenCount}`, { x: START_X, y: currentY, font: helveticaFont, size: 11, color: rgb(0.16, 0.65, 0.27) });
-                currentY -= LINE_SPACING_SMALL;
+                page.drawRectangle({x: START_X, y: legendY, width: legendBlockSize, height: legendBlockSize, color: rgb(0.16, 0.65, 0.27)});
+                page.drawText(`En Tiempo / Concluidos: ${greenCount}`, { x: START_X + 15, y: legendY, font: helveticaFont, size: 11, color: TEXT_COLOR });
+                legendY -= LINE_SPACING_SMALL;
             }
             if (yellowCount > 0) {
-                page.drawText(`• Ligeramente Atrasados: ${yellowCount}`, { x: START_X, y: currentY, font: helveticaFont, size: 11, color: rgb(1, 0.76, 0.28) });
-                currentY -= LINE_SPACING_SMALL;
+                page.drawRectangle({x: START_X, y: legendY, width: legendBlockSize, height: legendBlockSize, color: rgb(1, 0.76, 0.28)});
+                page.drawText(`Ligeramente Atrasados: ${yellowCount}`, { x: START_X + 15, y: legendY, font: helveticaFont, size: 11, color: TEXT_COLOR });
+                legendY -= LINE_SPACING_SMALL;
             }
             if (redCount > 0) {
-                page.drawText(`• Muy Atrasados / Vencidos: ${redCount}`, { x: START_X, y: currentY, font: helveticaFont, size: 11, color: rgb(0.86, 0.2, 0.27) });
-                currentY -= LINE_SPACING_SMALL;
+                page.drawRectangle({x: START_X, y: legendY, width: legendBlockSize, height: legendBlockSize, color: rgb(0.86, 0.2, 0.27)});
+                page.drawText(`Muy Atrasados / Vencidos: ${redCount}`, { x: START_X + 15, y: legendY, font: helveticaFont, size: 11, color: TEXT_COLOR });
+                legendY -= LINE_SPACING_SMALL;
             }
+            currentY = legendY; 
 
             // 4. Serializar y enviar
             const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -484,7 +492,7 @@ export class ProyectoController {
 
 
     // =========================================================================
-    // REPORTE INDIVIDUAL (USA HOJA MEMBRETADA Y ESPACIADO CORREGIDO)
+    // REPORTE INDIVIDUAL (ESPACIADO CORREGIDO Y ALINEACIÓN DE ROLES)
     // =========================================================================
 
     @Get(':id/report')
@@ -552,36 +560,36 @@ export class ProyectoController {
             
             // ID del Proyecto
             firstPage.drawText('ID del Proyecto: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.idProyecto}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= LINE_SPACING;
+            firstPage.drawText(`${project.idProyecto}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING_ITEM;
 
             // Avance
             const fase = project.faseActual !== null ? project.faseActual : 1;
             const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
             firstPage.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= LINE_SPACING;
+            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING_ITEM;
 
             // Fechas
             firstPage.drawText('Fecha Inicio: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${formatDate(project.fechaInicio)}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= LINE_SPACING;
+            firstPage.drawText(`${formatDate(project.fechaInicio)}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING_ITEM;
 
             firstPage.drawText('Fecha Fin Aprox: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${formatDate(project.fechaFinAprox)}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= LINE_SPACING * 1.5;
+            firstPage.drawText(`${formatDate(project.fechaFinAprox)}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING_ITEM * 1.5;
 
 
-            // Descripción (manejo multilínea)
+            // Descripción (alineación mejorada)
             firstPage.drawText('Descripción: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             
             const descriptionText = project.descripcion || 'N/A';
-            const descriptionWrapWidth = textWidth - INDENT_X_BIG; 
-            
+            const descriptionWrapWidth = textWidth - INDENT_X_VALUE + START_X; // Ancho disponible desde el valor
+
             const charsPerLine = Math.floor(descriptionWrapWidth / 5.5);
             const descriptionLines = descriptionText.match(new RegExp(`.{1,${charsPerLine}}`, 'g')) || [descriptionText]; 
 
-            let currentXDesc = START_X + INDENT_X_BIG; 
+            let currentXDesc = INDENT_X_VALUE; 
             for (const line of descriptionLines) {
                 if (currentY < CONTENT_END_Y + LINE_SPACING) break; 
                 
@@ -594,22 +602,21 @@ export class ProyectoController {
                     color: TEXT_COLOR,
                 });
                 currentY -= LINE_SPACING_SMALL * 0.9;
-                currentXDesc = START_X + INDENT_X_BIG; 
+                currentXDesc = INDENT_X_VALUE; 
             }
-            currentY -= LINE_SPACING; 
+            currentY -= LINE_SPACING * 0.5; 
             
             // Comunidad y Población
             firstPage.drawText('Comunidad: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= LINE_SPACING;
+            firstPage.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: INDENT_X_VALUE, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING_ITEM;
             
             firstPage.drawText('Población Beneficiada: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: START_X + INDENT_X_BIG + 40, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: INDENT_X_VALUE + 40, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING * 2;
 
             // Personas Involucradas
             if (currentY < CONTENT_END_Y + LINE_SPACING * 4) {
-                 // Aquí se necesitaría lógica de multi-página si la lista fuera muy larga
                  currentY = Math.max(currentY, CONTENT_END_Y + LINE_SPACING * 4); 
             }
             
@@ -622,14 +629,15 @@ export class ProyectoController {
                     
                     const nombreCompleto = `${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`;
                     
-                    firstPage.drawText(`- ${nombreCompleto}`, { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-                    currentY -= LINE_SPACING_SMALL * 0.8;
+                    firstPage.drawText(`• ${nombreCompleto}`, { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+                    currentY -= LINE_SPACING_SMALL;
                     
                     if (persona.rolEnProyecto) {
                         firstPage.drawText('Rol: ', { x: START_X + INDENT_X_SMALL, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
                         firstPage.drawText(`${persona.rolEnProyecto}`, { x: START_X + INDENT_X_SMALL + 25, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
-                        currentY -= LINE_SPACING_SMALL * 0.8;
+                        currentY -= LINE_SPACING_SMALL;
                     }
+                    currentY -= LINE_SPACING_SMALL * 0.5;
                 });
             } else {
                 firstPage.drawText('No hay personas involucradas registradas.', { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
