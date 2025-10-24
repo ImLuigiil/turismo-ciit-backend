@@ -589,12 +589,12 @@ export class ProyectoController {
             const charsPerLine = Math.floor(descriptionWrapWidth / 5.5);
             const descriptionLines = descriptionText.match(new RegExp(`.{1,${charsPerLine}}`, 'g')) || [descriptionText]; 
 
-            let currentXDesc = INDENT_X_VALUE - 55 ; 
+            let currentXDesc = INDENT_X_VALUE; 
             for (const line of descriptionLines) {
                 if (currentY < CONTENT_END_Y + LINE_SPACING) break; 
                 
                 firstPage.drawText(line.trim(), {
-                    x: currentXDesc - 55, 
+                    x: currentXDesc - 58, 
                     y: currentY,
                     font: helveticaFont,
                     size: 11,
