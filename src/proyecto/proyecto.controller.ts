@@ -9,11 +9,13 @@ import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
 // Importaciones para PDF
 import * as PDFKit from 'pdfkit'; 
-import { PDFDocument, StandardFonts, rgb, PDFPage } from 'pdf-lib'; 
+import { PDFDocument, StandardFonts, rgb, PDFPage, PDFImage } from 'pdf-lib'; 
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
+// Importación del motor de gráficos (DEBES INSTALARLA)
+import { ChartJSNodeCanvas } from 'chartjs-node-canvas'; 
 
 // Configuración de rutas (VERIFICA ESTA RUTA EN TU PROYECTO)
 const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
@@ -24,16 +26,22 @@ const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
 
 // Coordenadas y estilos para estampar el contenido en la plantilla
 const START_X = 90; // Margen izquierdo
-const INDENT_X_SMALL = 85; // Indentación menor
-const INDENT_X_BIG = 150; // Indentación mayor
-const INDENT_X_VALUE = 240; // Posición de los valores
+const INDENT_X_SMALL = 85; 
+const INDENT_X_BIG = 150; 
+const INDENT_X_VALUE = 240; 
 const CONTENT_START_Y = 660; // Posición Y de inicio
 const CONTENT_END_Y = 140; // Límite inferior
 const LINE_SPACING = 25; // Espaciado entre bloques principales
 const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
 const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 
+// Constantes para el gráfico
+const CHART_WIDTH = 350;
+const CHART_HEIGHT = 200;
+const CHART_X = START_X + 100; 
+const CHART_Y_OFFSET = 30; // Espacio para el título del gráfico
 
+// (Funciones auxiliares de cálculo...)
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
     if (!fechaInicio || !fechaFinAprox) return [];
     const startDate = new Date(fechaInicio);
@@ -119,6 +127,46 @@ const formatDate = (date: Date | null) => {
     const d = new Date(date);
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
+
+// --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS ---
+const generatePieChartBuffer = async (data: number[], labels: string[], colors: string[]): Promise<Buffer> => {
+    const chartJSNodeCanvas = new ChartJSNodeCanvas({ width: CHART_WIDTH, height: CHART_HEIGHT });
+    
+    const configuration = {
+        type: 'doughnut' as const,
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: colors,
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: false,
+            plugins: {
+                legend: {
+                    position: 'right' as const,
+                    labels: {
+                        font: { size: 10 }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Resumen de Avance de Proyectos',
+                    font: { size: 12 }
+                }
+            },
+            layout: {
+                padding: 10 // Agregado padding para evitar que la leyenda choque con el borde
+            }
+        }
+    };
+    
+    // Genera la imagen y la devuelve como Buffer
+    return chartJSNodeCanvas.renderToBuffer(configuration, 'image/png');
+};
+
 
 // =========================================================================
 // FIN CONSTANTES Y FUNCIONES AUXILIARES
@@ -315,7 +363,7 @@ export class ProyectoController {
     }
 
     // =========================================================================
-    // REPORTE GENERAL (USA HOJA MEMBRETADA, MÚLTIPLES PÁGINAS Y RESUMEN VISUAL)
+    // REPORTE GENERAL (CON GRÁFICA DE PASTEL COMO IMAGEN)
     // =========================================================================
 
     @Get('report/general')
@@ -339,7 +387,7 @@ export class ProyectoController {
             
             const TEXT_COLOR = rgb(0, 0, 0);
 
-            // 1. Configurar la primera página (USANDO ASIGNACIÓN CLÁSICA PARA EVITAR ERROR 2488)
+            // 1. Configurar la primera página
             const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
             let page: PDFPage = firstPageResult[0];
             let currentY: number = firstPageResult[1];
@@ -424,13 +472,7 @@ export class ProyectoController {
                 });
             }
 
-            // 3. Resumen y Gráfico
-            if (currentY < CONTENT_END_Y + LINE_SPACING * 8) {
-                const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
-                page = newPageResult[0];
-                currentY = newPageResult[1];
-            }
-            currentY -= LINE_SPACING * 2;
+            // 3. GENERACIÓN E INCRUSTACIÓN DEL GRÁFICO DE PASTEL
             
             // Lógica del conteo de colores
             let greenCount = 0; let yellowCount = 0; let redCount = 0; let greyCount = 0;
@@ -444,40 +486,43 @@ export class ProyectoController {
                     default: greyCount++; break;
                 }
             });
-            const totalProjects = proyectos.length;
             
-            page.drawText('Resumen de Proyectos por Estado:', { 
-                x: START_X, 
-                y: currentY, 
-                font: helveticaBoldFont, 
-                size: 14,
-                color: TEXT_COLOR
+            // 3.1 Preparar datos
+            const chartData = [greenCount, yellowCount, redCount, greyCount];
+            const chartLabels = ['En Tiempo / Concluidos', 'Ligeramente Atrasados', 'Muy Atrasados / Vencidos', 'Sin Fechas'];
+            const chartColors = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
+            
+            // 3.2 Generar Buffer de la imagen
+            const chartBuffer = await generatePieChartBuffer(chartData, chartLabels, chartColors);
+            
+            // 3.3 Incrustar la imagen en el PDF
+            let embeddedChart: PDFImage;
+            try {
+                embeddedChart = await pdfDoc.embedPng(chartBuffer);
+            } catch (e) {
+                console.error("Error al incrustar PNG, intentando como JPEG (Puede que el buffer no sea un PNG válido).", e);
+                embeddedChart = await pdfDoc.embedJpg(chartBuffer);
+            }
+
+            // 3.4 Dibujar la imagen
+            if (currentY < CONTENT_END_Y + CHART_HEIGHT) {
+                const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
+                page = newPageResult[0];
+                currentY = newPageResult[1];
+            }
+            currentY -= CHART_Y_OFFSET;
+            
+            const chartDrawY = currentY - CHART_HEIGHT; 
+            
+            page.drawImage(embeddedChart, {
+                x: CHART_X - (CHART_WIDTH / 2) + 50, // Centrar la imagen en la parte central-derecha de la página
+                y: chartDrawY,
+                width: CHART_WIDTH,
+                height: CHART_HEIGHT,
             });
-            currentY -= LINE_SPACING;
-
-            // ⚠️ IMPLEMENTACIÓN DE LEYENDA VISUAL SIMPLE (SUSTITUTO DEL GRÁFICO DE PASTEL)
-            const legendBlockSize = 8;
-            let legendY = currentY;
-
-            page.drawText(`Total de Proyectos: ${totalProjects}`, { x: START_X, y: legendY, font: helveticaBoldFont, size: 11, color: TEXT_COLOR });
-            legendY -= LINE_SPACING_SMALL;
-
-            if (greenCount > 0) {
-                page.drawRectangle({x: START_X, y: legendY, width: legendBlockSize, height: legendBlockSize, color: rgb(0.16, 0.65, 0.27)});
-                page.drawText(`En Tiempo / Concluidos: ${greenCount}`, { x: START_X + 15, y: legendY, font: helveticaFont, size: 11, color: TEXT_COLOR });
-                legendY -= LINE_SPACING_SMALL;
-            }
-            if (yellowCount > 0) {
-                page.drawRectangle({x: START_X, y: legendY, width: legendBlockSize, height: legendBlockSize, color: rgb(1, 0.76, 0.28)});
-                page.drawText(`Ligeramente Atrasados: ${yellowCount}`, { x: START_X + 15, y: legendY, font: helveticaFont, size: 11, color: TEXT_COLOR });
-                legendY -= LINE_SPACING_SMALL;
-            }
-            if (redCount > 0) {
-                page.drawRectangle({x: START_X, y: legendY, width: legendBlockSize, height: legendBlockSize, color: rgb(0.86, 0.2, 0.27)});
-                page.drawText(`Muy Atrasados / Vencidos: ${redCount}`, { x: START_X + 15, y: legendY, font: helveticaFont, size: 11, color: TEXT_COLOR });
-                legendY -= LINE_SPACING_SMALL;
-            }
-            currentY = legendY; 
+            
+            // 3.5 Actualizar posición Y después del gráfico
+            currentY = chartDrawY - LINE_SPACING;
 
             // 4. Serializar y enviar
             const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
@@ -521,7 +566,7 @@ export class ProyectoController {
 
             // Configurar la primera página
             const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
-            let page: PDFPage = firstPageResult[0]; // Usamos 'page' para poder reasignarla en el salto
+            let page: PDFPage = firstPageResult[0]; 
             let currentY: number = firstPageResult[1];
 
             const { width } = templateDoc.getPages()[0].getSize();
@@ -551,7 +596,7 @@ export class ProyectoController {
             currentY -= LINE_SPACING * 2; // Espacio ampliado para separación visual
 
             // Información General
-            currentY -= LINE_SPACING * 0.7; // Ajuste para el espacio después del título
+            currentY -= LINE_SPACING * 0.7; 
             page.drawText('Información General:', { 
                 x: START_X, 
                 y: currentY, 
@@ -598,7 +643,7 @@ export class ProyectoController {
                     const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
                     page = newPageResult[0];
                     currentY = newPageResult[1];
-                    currentY -= LINE_SPACING_ITEM; // Pequeño ajuste después del salto
+                    currentY -= LINE_SPACING_ITEM; 
                 }
                 
                 page.drawText(line.trim(), {
