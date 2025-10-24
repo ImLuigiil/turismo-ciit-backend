@@ -535,7 +535,7 @@ export class ProyectoController {
             
             page.drawImage(embeddedChart, {
                 x: START_X, // Dibujado desde el margen izquierdo
-                y: chartDrawY+50,
+                y: chartDrawY+500,
                 width: 500, // Usar un ancho mayor para el gráfico de barras (ajusta según tus constantes CHART_WIDTH/HEIGHT)
                 height: 250,
             });
