@@ -24,4 +24,3 @@ export class ProyectoImagen {
   proyecto: Proyecto;
 }
 
-//Activacion del server 1.0
