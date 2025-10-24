@@ -589,7 +589,7 @@ export class ProyectoController {
             const charsPerLine = Math.floor(descriptionWrapWidth / 5.5);
             const descriptionLines = descriptionText.match(new RegExp(`.{1,${charsPerLine}}`, 'g')) || [descriptionText]; 
 
-            let currentXDesc = INDENT_X_VALUE; 
+            let currentXDesc = INDENT_X_VALUE - 55 ; 
             for (const line of descriptionLines) {
                 if (currentY < CONTENT_END_Y + LINE_SPACING) break; 
                 
