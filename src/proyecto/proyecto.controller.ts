@@ -8,111 +8,36 @@ import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
 // Importaciones para PDF
-import * as PDFKit from 'pdfkit'; // Para el reporte general
-import { PDFDocument, StandardFonts, rgb } from 'pdf-lib'; // Para el reporte individual con plantilla
+import * as PDFKit from 'pdfkit';
+import { PDFDocument, StandardFonts, rgb, PDFPage } from 'pdf-lib'; 
 import { Response } from 'express';
 import * as fs from 'fs';
 import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 
-// Configuración de rutas y logos (Asegúrate que la ruta sea correcta)
+// Configuración de rutas (VERIFICA ESTA RUTA EN TU PROYECTO)
 const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
 
 // =========================================================================
 // CONSTANTES Y FUNCIONES AUXILIARES
 // =========================================================================
-const SEP_LOGO_URL = 'https://www.gob.mx/cms/uploads/action_program/main_image/3180/post_logo_educ.jpg';
-const TECNM_LOGO_URL = 'https://upload.wikimedia.org/wikipedia/commons/thumb/1/17/Tecnologico_Nacional_de_Mexico.svg/1200px-Tecnologico_Nacional_de_Mexico.svg.png';
 
-const HEADER_Y_POS = 50;
-const HEADER_MARGIN_BOTTOM = 120; 
-const LOGO_HEIGHT = 45; 
-const LOGO_SEP_WIDTH = 70; 
-const LOGO_TECNM_WIDTH = 110; 
-const LINE_COLOR = '#FFD700'; 
-const LINE_THICKNESS = 3;
-const LOGO_SPACING = 15; 
+// Coordenadas y estilos para estampar el contenido en la plantilla
+const START_X = 70;
+const INDENT_X_SMALL = 85;
+const INDENT_X_BIG = 150;
+const CONTENT_START_Y = 750;
+const CONTENT_END_Y = 140;
+const LINE_SPACING = 25;
+const LINE_SPACING_SMALL = 18;
 
-const LOGO_IZQ_1_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcS_ad1TRzUNczr7qEP260D8gu4szfzh_we59w&s'; 
-const LOGO_IZQ_2_URL = 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTL4am0BuytAGl36oNx6laPZkToh0tzlJveOg&s';
-
-const FOOTER_TEXT = 'Av. Universidad 1200, col. Xoxo, Alcaldía Benito Juárez, C.P. 03330.\nCiudad de México. Tel. (55) 3600-2511, ext. 65055\ne-mail: d_direccion@tecnm.mx www.tecnm.mx';
-
-
-const FOOTER_LINE_Y = 710;
-const FOOTER_Y_POS = FOOTER_LINE_Y - 40; 
-const FOOTER_LINE_COLOR = '#C00000';
-const FOOTER_LINE_THICKNESS = 1;
-const FOOTER_LOGO_SIZE = 30;
-
-
-const addHeader = (doc: PDFKit.PDFDocument, sepBuffer: Buffer, tecNmBuffer: Buffer) => {
-    const margin = 50;
-    const lineX = margin + LOGO_SEP_WIDTH + LOGO_SPACING;
-    const lineYStart = HEADER_Y_POS - 5;
-    const lineYEnd = HEADER_Y_POS + LOGO_HEIGHT + 5;
-
-    doc.image(sepBuffer, margin, HEADER_Y_POS, { fit: [LOGO_SEP_WIDTH, LOGO_HEIGHT] });
-
-    doc.save()
-        .moveTo(lineX, lineYStart)
-        .lineTo(lineX, lineYEnd)
-        .lineWidth(LINE_THICKNESS)
-        .stroke(LINE_COLOR);
-    doc.restore();
-
-    const tecNmX = lineX + LOGO_SPACING;
-
-    doc.image(tecNmBuffer, tecNmX, HEADER_Y_POS, { fit: [LOGO_TECNM_WIDTH, LOGO_HEIGHT] });
-
-    doc.y = HEADER_MARGIN_BOTTOM;
-};
-
-const addFooter = (doc: PDFKit.PDFDocument, logoIzq1Buffer: Buffer, logoIzq2Buffer: Buffer) => {
-    const margin = 50;
-    const pageRightBound = doc.page.width - margin;
-    let currentX = margin;
-    const logoY = FOOTER_Y_POS;
-
-    doc.image(logoIzq1Buffer, currentX, logoY, { fit: [FOOTER_LOGO_SIZE, FOOTER_LOGO_SIZE] });
-    currentX += FOOTER_LOGO_SIZE + 10;
-
-    doc.image(logoIzq2Buffer, currentX, logoY, { fit: [FOOTER_LOGO_SIZE, FOOTER_LOGO_SIZE] });
-    currentX += FOOTER_LOGO_SIZE + 30;
-
-    doc.fontSize(7)
-        .fillColor('#444444')
-        .font('Helvetica')
-        .text(
-            FOOTER_TEXT, 
-            currentX, 
-            logoY + 5, 
-            { 
-                width: pageRightBound - currentX,
-                align: 'left' as const, 
-                lineGap: 2 
-            }
-        );
-
-    const lineY = FOOTER_LINE_Y;
-    doc.save()
-        .moveTo(margin, lineY)
-        .lineTo(pageRightBound, lineY)
-        .lineWidth(FOOTER_LINE_THICKNESS)
-        .stroke(FOOTER_LINE_COLOR);
-    doc.restore();
-
-};
+// (Las funciones getPhaseSchedule, calculateTimeBasedProgress, y calcularAvance se mantienen sin cambios)
 
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
-    if (!fechaInicio || !fechaFinAprox) {
-        return [];
-    }
+    if (!fechaInicio || !fechaFinAprox) return [];
     const startDate = new Date(fechaInicio);
     const endDate = new Date(fechaFinAprox);
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) {
-        return [];
-    }
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime()) || startDate >= endDate) return [];
     const totalDurationDays = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
     const timeForFirstThreePhases = totalDurationDays * 0.75;
     const daysPerEarlyPhase = timeForFirstThreePhases / 3;
@@ -150,9 +75,7 @@ const calculateTimeBasedProgress = (fechaInicio: Date | null, fechaFinAprox: Dat
 
 const calcularAvance = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null) => {
     if (!fechaInicio || !fechaFinAprox || faseActual === null) return 0;
-    if ((faseActual ?? 0) >= 7) {
-        return 100;
-    }
+    if ((faseActual ?? 0) >= 7) return 100;
     const getPhaseProgress = (fase: number) => {
         if (fase <= 1) return 0;
         const progressMap = { 2: 25, 3: 50, 4: 75, 5: 81.25, 6: 87.5, 7: 100 };
@@ -169,41 +92,24 @@ const calcularAvance = (fechaInicio: Date | null, fechaFinAprox: Date | null, fa
     return Math.min(100, Math.max(0, Math.round(finalPercentage)));
 };
 
-// Tipo de unión explícito para los posibles colores de retorno
 type ProgressColor = '#28a745' | '#ffc107' | '#dc3545' | '#6c757d'; 
 
 const getProgressColor = (fechaInicio: Date | null, fechaFinAprox: Date | null, faseActual: number | null): ProgressColor => {
-    if (!fechaInicio || !fechaFinAprox || faseActual === null || faseActual < 1) {
-        return '#28a745';
-    }
-    if (faseActual === 7) {
-        return '#28a745';
-    }
+    if (!fechaInicio || !fechaFinAprox || faseActual === null || faseActual < 1) return '#28a745';
+    if (faseActual === 7) return '#28a745';
     const currentDate = new Date();
     const endDate = new Date(fechaFinAprox);
-    if (currentDate > endDate) {
-        return '#dc3545';
-    }
+    if (currentDate > endDate) return '#dc3545';
     const schedule = getPhaseSchedule(fechaInicio, fechaFinAprox);
-    if (schedule.length === 0) {
-        return '#28a745';
-    }
+    if (schedule.length === 0) return '#28a745';
     const expectedEndDateForCurrentPhase = schedule[faseActual - 1];
-    if (!expectedEndDateForCurrentPhase) { 
-        return '#28a745'; 
-    }
+    if (!expectedEndDateForCurrentPhase) return '#28a745'; 
 
     const timeDifference = currentDate.getTime() - expectedEndDateForCurrentPhase.getTime();
     const daysBehind = Math.floor(timeDifference / (1000 * 60 * 60 * 24));
-    if (daysBehind <= 0) {
-        return '#28a745';
-    }
-    if (daysBehind >= 5) {
-        return '#dc3545';
-    }
-    if (daysBehind >= 1 && daysBehind <= 4) {
-        return '#ffc107';
-    }
+    if (daysBehind <= 0) return '#28a745';
+    if (daysBehind >= 5) return '#dc3545';
+    if (daysBehind >= 1 && daysBehind <= 4) return '#ffc107';
     return '#28a745';
 };
 
@@ -216,6 +122,7 @@ const formatDate = (date: Date | null) => {
 // =========================================================================
 // FIN CONSTANTES Y FUNCIONES AUXILIARES
 // =========================================================================
+
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -393,176 +300,192 @@ export class ProyectoController {
         
         return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
     }
+    
+    /**
+     * Helper para agregar una página con el sello de la hoja membretada
+     * y resetear la posición Y
+     */
+    private async addTemplatePage(pdfDoc: PDFDocument, templateDoc: PDFDocument): Promise<[PDFPage, number]> {
+        const [templatePage] = await pdfDoc.copyPages(templateDoc, [0]);
+        const newPage = pdfDoc.addPage(templatePage);
+        return [newPage, CONTENT_START_Y]; // Retorna la nueva página y la posición Y de inicio
+    }
+
+    // =========================================================================
+    // REPORTE GENERAL (USA HOJA MEMBRETADA Y MÚLTIPLES PÁGINAS)
+    // =========================================================================
 
     @Get('report/general')
     @UseGuards(AuthGuard('jwt'))
     async generateGeneralReport(@Res() res: Response) {
         const proyectos = await this.proyectoService.findAll();
 
-        // **USANDO PDFKIT**
-        const doc = new PDFKit();
-        const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
-
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        doc.pipe(res);
+        if (!fs.existsSync(TEMPLATE_PDF_PATH)) {
+            throw new NotFoundException(`No se encontró la plantilla PDF en: ${TEMPLATE_PDF_PATH}`);
+        }
 
         try {
-            const [sepResponse, tecNmResponse, logoIzq1Response, logoIzq2Response] = await Promise.all([
-                axios.get(SEP_LOGO_URL, { responseType: 'arraybuffer' }),
-                axios.get(TECNM_LOGO_URL, { responseType: 'arraybuffer' }),
-                axios.get(LOGO_IZQ_1_URL, { responseType: 'arraybuffer' }),
-                axios.get(LOGO_IZQ_2_URL, { responseType: 'arraybuffer' }),
-            ]);
-            const sepImageBuffer = Buffer.from(sepResponse.data);
-            const tecNmImageBuffer = Buffer.from(tecNmResponse.data);
-            const logoIzq1Buffer = Buffer.from(logoIzq1Response.data);
-            const logoIzq2Buffer = Buffer.from(logoIzq2Response.data);
-        
-            doc.on('pageAdded', () => {
-                addHeader(doc, sepImageBuffer, tecNmImageBuffer);
-                addFooter(doc, logoIzq1Buffer, logoIzq2Buffer);
-            });
+            // Cargar la plantilla y el nuevo documento
+            const existingPdfBytes = fs.readFileSync(TEMPLATE_PDF_PATH);
+            const templateDoc = await PDFDocument.load(existingPdfBytes);
+            const pdfDoc = await PDFDocument.create();
+            
+            const { width } = templateDoc.getPages()[0].getSize();
+            const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
+            const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
+            
+            const TEXT_COLOR = rgb(0, 0, 0);
 
-            addHeader(doc, sepImageBuffer, tecNmImageBuffer);
-            addFooter(doc, logoIzq1Buffer, logoIzq2Buffer);
+            // 1. Configurar la primera página (CORRECCIÓN DE ERROR DE DESTRUCTURING)
+            const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
+            let page: PDFPage = firstPageResult[0];
+            let currentY: number = firstPageResult[1];
+            
+            // 2. Título principal
+            currentY -= LINE_SPACING;
+            page.drawText('Reporte General de Avance de Proyectos', { 
+                x: START_X, 
+                y: currentY, 
+                font: helveticaBoldFont, 
+                size: 16,
+                maxWidth: width - START_X * 2,
+                color: TEXT_COLOR
+            });
+            currentY -= LINE_SPACING * 2;
+            
+            if (proyectos.length === 0) {
+                page.drawText('No hay proyectos registrados en el sistema.', { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            } else {
+                
+                proyectos.forEach((proyecto, index) => {
+                    const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1; 
+                    const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+                    const colorHex = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+                    
+                    // Si el contenido se acerca al límite inferior, añade una nueva página
+                    if (currentY < CONTENT_END_Y + LINE_SPACING * 3) {
+                        const newPageResult = this.addTemplatePage(pdfDoc, templateDoc);
+                        page = newPageResult[0];
+                        currentY = newPageResult[1] - LINE_SPACING;
+                    }
+                    
+                    currentY -= LINE_SPACING * 1.5;
+
+                    // Nombre del proyecto
+                    page.drawText(`${index + 1}. ${proyecto.nombre}`, { 
+                        x: START_X, 
+                        y: currentY, 
+                        font: helveticaBoldFont, 
+                        size: 12,
+                        color: TEXT_COLOR,
+                        maxWidth: width - START_X * 2,
+                    });
+                    currentY -= LINE_SPACING_SMALL;
+                    
+                    // Avance y Fase
+                    page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
+                    page.drawText(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'} (${avance}%)`, { x: START_X + 50, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
+                    
+                    // Barra de Progreso
+                    const progressBarWidth = 150;
+                    const progressBarHeight = 8;
+                    const progressX = width - START_X - progressBarWidth; 
+                    const progressY = currentY + 1; 
+                    
+                    // Conversión de color Hex a RGB para PDF-LIB
+                    const barColor = colorHex === '#dc3545' ? rgb(0.86, 0.2, 0.27) : 
+                                     colorHex === '#ffc107' ? rgb(1, 0.76, 0.28) : 
+                                     colorHex === '#28a745' ? rgb(0.16, 0.65, 0.27) : rgb(0.5, 0.5, 0.5);
+                    
+                    // Fondo
+                    page.drawRectangle({
+                        x: progressX, 
+                        y: progressY, 
+                        width: progressBarWidth, 
+                        height: progressBarHeight,
+                        color: rgb(0.9, 0.9, 0.9),
+                        borderColor: rgb(0.7, 0.7, 0.7),
+                        borderWidth: 0.5,
+                    });
+
+                    // Progreso
+                    page.drawRectangle({
+                        x: progressX, 
+                        y: progressY, 
+                        width: (avance / 100) * progressBarWidth, 
+                        height: progressBarHeight,
+                        color: barColor,
+                    });
+                    
+                    currentY -= LINE_SPACING_SMALL;
+                });
+            }
+
+            // 3. Resumen y Gráfico
+            if (currentY < CONTENT_END_Y + LINE_SPACING * 8) {
+                const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
+                page = newPageResult[0];
+                currentY = newPageResult[1];
+            }
+            currentY -= LINE_SPACING * 2;
+            
+            // Lógica del conteo de colores
+            let greenCount = 0; let yellowCount = 0; let redCount = 0; let greyCount = 0;
+            proyectos.forEach(proyecto => {
+                const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1;
+                const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
+                switch (color) {
+                    case '#28a745': greenCount++; break;
+                    case '#ffc107': yellowCount++; break;
+                    case '#dc3545': redCount++; break;
+                    default: greyCount++; break;
+                }
+            });
+            const totalProjects = proyectos.length;
+            
+            page.drawText('Resumen de Proyectos por Estado:', { 
+                x: START_X, 
+                y: currentY, 
+                font: helveticaBoldFont, 
+                size: 14,
+                color: TEXT_COLOR
+            });
+            currentY -= LINE_SPACING;
+
+            // Leyenda del resumen
+            page.drawText(`Total de Proyectos: ${totalProjects}`, { x: START_X, y: currentY, font: helveticaBoldFont, size: 11, color: TEXT_COLOR });
+            currentY -= LINE_SPACING_SMALL;
+
+            if (greenCount > 0) {
+                page.drawText(`• En Tiempo / Concluidos: ${greenCount}`, { x: START_X, y: currentY, font: helveticaFont, size: 11, color: rgb(0.16, 0.65, 0.27) });
+                currentY -= LINE_SPACING_SMALL;
+            }
+            if (yellowCount > 0) {
+                page.drawText(`• Ligeramente Atrasados: ${yellowCount}`, { x: START_X, y: currentY, font: helveticaFont, size: 11, color: rgb(1, 0.76, 0.28) });
+                currentY -= LINE_SPACING_SMALL;
+            }
+            if (redCount > 0) {
+                page.drawText(`• Muy Atrasados / Vencidos: ${redCount}`, { x: START_X, y: currentY, font: helveticaFont, size: 11, color: rgb(0.86, 0.2, 0.27) });
+                currentY -= LINE_SPACING_SMALL;
+            }
+
+            // 4. Serializar y enviar
+            const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
+            res.setHeader('Content-Type', 'application/pdf');
+            res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+            const pdfBytes = await pdfDoc.save();
+            res.send(Buffer.from(pdfBytes));
 
         } catch (error) {
-            console.error('Error al descargar los logos:', error.message);
-            doc.fontSize(10).text('Error al cargar logos y encabezado/pie de página.', 50, 50);
-            doc.y = 80; 
+            console.error('Error al generar el reporte general (PDF-LIB):', error.message);
+            res.status(500).send('Error interno al generar el reporte general.');
         }
-
-        doc.y = HEADER_MARGIN_BOTTOM; 
-        
-        doc.fontSize(16).font('Helvetica-Bold').fillColor('#000000').text('Reporte General de Avance de Proyectos', { align: 'center' });
-        doc.moveDown(2);
-        
-        if (proyectos.length === 0) {
-            doc.fontSize(12).fillColor('#000000').text('No hay proyectos registrados en el sistema.', { align: 'center' });
-        } else {
-            proyectos.forEach((proyecto, index) => {
-                const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1; 
-                const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-                const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-
-                const yPos = doc.y;
-
-                if (yPos > FOOTER_Y_POS - 70) {
-                    doc.addPage();
-                    doc.y = HEADER_MARGIN_BOTTOM;
-                }
-                
-
-                doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text(`${index + 1}. ${proyecto.nombre}`, 50, doc.y);
-                doc.moveDown(0.5);
-                doc.fontSize(10).fillColor('#000000');
-                
-                const textStartX = 50;
-                let currentTextY = doc.y;
-
-                doc.font('Helvetica-Bold').text('Comunidad: ', textStartX, currentTextY, { continued: true })
-                    .font('Helvetica').text(`${proyecto.comunidad ? proyecto.comunidad.nombre : 'N/A'}`);
-                currentTextY = doc.y + 5;
-
-                doc.font('Helvetica-Bold').text('Población Beneficiada: ', textStartX, currentTextY, { continued: true })
-                    .font('Helvetica').text(`${proyecto.poblacionBeneficiada ? proyecto.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`);
-                currentTextY = doc.y + 5;
-
-                doc.font('Helvetica-Bold').text('Avance: ', textStartX, currentTextY, { continued: true })
-                    .font('Helvetica').text(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}(${avance}%)`);
-                currentTextY = doc.y + 5;
-                
-                const progressBarWidth = 200;
-                const progressBarHeight = 10;
-                const progressX = doc.page.width - 50 - progressBarWidth; 
-                const progressY = yPos + 18; 
-
-                doc.rect(progressX, progressY, progressBarWidth, progressBarHeight).stroke('#e0e0e0');
-                doc.rect(progressX, progressY, (avance / 100) * progressBarWidth, progressBarHeight).fill(color);
-                
-                const textX = progressX + (avance / 100) * progressBarWidth - 15;
-                const textY = progressY + 2;
-                doc.fontSize(8).fillColor('#000000').text(`${avance}%`, textX, textY);
-
-                doc.y = Math.max(currentTextY, progressY + progressBarHeight) + 15;
-                if (doc.y > FOOTER_Y_POS - 70) {
-                    doc.addPage();
-                    doc.y = HEADER_MARGIN_BOTTOM;
-                }
-            });
-        }
-        let greenCount = 0;
-        let yellowCount = 0;
-        let redCount = 0;
-        let greyCount = 0;
-        proyectos.forEach(proyecto => {
-            const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1;
-            const color = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
-            switch (color) {
-                case '#28a745': greenCount++; break;
-                case '#ffc107': yellowCount++; break;
-                case '#dc3545': redCount++; break;
-                default: greyCount++; break;
-            }
-        });
-
-        const totalProjects = proyectos.length;
-        
-        const chartRadius = 50;
-        const chartCenterX = 100;
-        const chartCenterY = doc.y + chartRadius + 20;
-        let currentAngle = 0;
-
-        const drawSlice = (color: string, count: number) => {
-            if (count === 0) return;
-            const sliceAngle = (count / totalProjects) * 360;
-            const startAngle = currentAngle;
-            const endAngle = currentAngle + sliceAngle;
-
-            doc.save()
-                .fill(color)
-                .moveTo(chartCenterX, chartCenterY)
-                .lineTo(
-                    chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180),
-                    chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)
-                )
-                .path(`M ${chartCenterX} ${chartCenterY} L ${chartCenterX + chartRadius * Math.cos(startAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(startAngle * Math.PI / 180)} A ${chartRadius} ${chartRadius} 0 ${sliceAngle > 180 ? 1 : 0} 1 ${chartCenterX + chartRadius * Math.cos(endAngle * Math.PI / 180)} ${chartCenterY + chartRadius * Math.sin(endAngle * Math.PI / 180)} Z`)
-                .fill(color);
-            
-            currentAngle += sliceAngle;
-            doc.restore();
-        };
-
-        drawSlice('#28a745', greenCount);
-        drawSlice('#ffc107', yellowCount);
-        drawSlice('#dc3545', redCount);
-        drawSlice('#6c757d', greyCount);
-        
-        const legendX = chartCenterX + chartRadius + 20;
-        const legendY = chartCenterY - chartRadius + 10;
-        const legendSpacing = 15;
-        
-        doc.fontSize(12).font('Helvetica-Bold').fillColor('#000000').text('Resumen de Proyectos', legendX, legendY - 15);
-        doc.fontSize(10).font('Helvetica').fillColor('#000000').text(`Total de Proyectos: ${totalProjects}`, legendX, legendY);
-
-        if (greenCount > 0) {
-            doc.fillColor('#28a745').text(`• En Tiempo: ${greenCount}`, legendX, legendY + legendSpacing);
-        }
-        if (yellowCount > 0) {
-            doc.fillColor('#ffc107').text(`• Ligeramente Atrasados: ${yellowCount}`, legendX, legendY + legendSpacing * 2);
-        }
-        if (redCount > 0) {
-            doc.fillColor('#dc3545').text(`• Muy Atrasados / Vencidos: ${redCount}`, legendX, legendY + legendSpacing * 3);
-        }
-        if (greyCount > 0) {
-            doc.fillColor('#6c757d').text(`• Sin Fechas: ${greyCount}`, legendX, legendY + legendSpacing * 4);
-        }
-        
-        doc.moveDown(6);
-
-        doc.end();
     }
+
+
+    // =========================================================================
+    // REPORTE INDIVIDUAL (USA HOJA MEMBRETADA Y ESPACIADO CORREGIDO)
+    // =========================================================================
 
     @Get(':id/report')
     @UseGuards(AuthGuard('jwt'))
@@ -581,125 +504,138 @@ export class ProyectoController {
         }
 
         try {
-            // **USANDO PDF-LIB para estampar sobre la plantilla**
-            
-            // 1. Cargar el PDF de la plantilla
+            // Cargar el PDF de la plantilla
             const existingPdfBytes = fs.readFileSync(TEMPLATE_PDF_PATH);
-            const pdfDoc = await PDFDocument.load(existingPdfBytes);
+            const templateDoc = await PDFDocument.load(existingPdfBytes);
+            const pdfDoc = await PDFDocument.create();
 
-            // 2. Obtener la página y cargar la fuente
-            const pages = pdfDoc.getPages();
-            const firstPage = pages[0];
-            const { width, height } = firstPage.getSize();
+            // Configurar la primera página
+            const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
+            const firstPage: PDFPage = firstPageResult[0];
+            let currentY: number = firstPageResult[1];
+
+            const { width } = firstPage.getSize();
             const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
             const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-            // 3. Configurar respuesta HTTP
+            // Configurar respuesta HTTP
             const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-            // 4. Iniciar el dibujado del contenido del proyecto
-            // *** ESTAS COORDENADAS SON DE EJEMPLO Y DEBEN SER AJUSTADAS MANUALMENTE ***
-            let currentY = height - 200; 
-            const startX = 70; 
-            const lineHeight = 16;
-            const textWidth = width - (startX * 2);
-
             // Colores
             const TEXT_COLOR = rgb(0, 0, 0); 
             const TITLE_COLOR = rgb(0.2, 0.2, 0.2); 
+            const textWidth = width - (START_X * 2);
 
             // Título del Reporte
+            currentY -= LINE_SPACING;
             firstPage.drawText(`Reporte del Proyecto: ${project.nombre}`, {
-                x: startX,
+                x: START_X,
                 y: currentY,
                 font: helveticaBoldFont,
                 size: 16,
                 maxWidth: textWidth,
                 color: TEXT_COLOR,
             });
-            currentY -= lineHeight * 2;
+            currentY -= LINE_SPACING * 1.5;
 
             // Información General
             firstPage.drawText('Información General:', { 
-                x: startX, 
+                x: START_X, 
                 y: currentY, 
                 font: helveticaBoldFont,
                 size: 14,
                 color: TITLE_COLOR,
             });
-            currentY -= lineHeight;
+            currentY -= LINE_SPACING;
             
             // ID del Proyecto
-            firstPage.drawText('ID del Proyecto: ', { x: startX, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.idProyecto}`, { x: startX + 110, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= lineHeight;
+            firstPage.drawText('ID del Proyecto: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.idProyecto}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING;
 
             // Avance
             const fase = project.faseActual !== null ? project.faseActual : 1;
             const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
-            firstPage.drawText('Avance: ', { x: startX, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: startX + 110, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= lineHeight;
+            firstPage.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`Fase ${fase} (${avance}%)`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING;
 
-            // Descripción (manejo manual de multilínea simple)
-            firstPage.drawText('Descripción: ', { x: startX, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            // Fechas
+            firstPage.drawText('Fecha Inicio: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${formatDate(project.fechaInicio)}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING;
+
+            firstPage.drawText('Fecha Fin Aprox: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${formatDate(project.fechaFinAprox)}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING * 1.5;
+
+
+            // Descripción (manejo multilínea)
+            firstPage.drawText('Descripción: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             
             const descriptionText = project.descripcion || 'N/A';
-            const descriptionLines = descriptionText.match(/.{1,90}/g) || [descriptionText]; 
+            const descriptionWrapWidth = textWidth - INDENT_X_BIG; 
+            
+            const charsPerLine = Math.floor(descriptionWrapWidth / 5.5);
+            const descriptionLines = descriptionText.match(new RegExp(`.{1,${charsPerLine}}`, 'g')) || [descriptionText]; 
 
-            let currentXDesc = startX + 85; 
+            let currentXDesc = START_X + INDENT_X_BIG; 
             for (const line of descriptionLines) {
-                if (currentY < 150) break; // Control simple de fin de página
+                if (currentY < CONTENT_END_Y + LINE_SPACING) break; 
                 
-                firstPage.drawText(line, {
+                firstPage.drawText(line.trim(), {
                     x: currentXDesc, 
                     y: currentY,
                     font: helveticaFont,
                     size: 11,
-                    maxWidth: textWidth - (currentXDesc - startX),
+                    maxWidth: descriptionWrapWidth,
                     color: TEXT_COLOR,
                 });
-                currentY -= lineHeight * 0.9;
-                currentXDesc = startX;
+                currentY -= LINE_SPACING_SMALL * 0.9;
+                currentXDesc = START_X + INDENT_X_BIG; 
             }
-            currentY -= lineHeight; 
+            currentY -= LINE_SPACING; 
             
-            // Comunidad
-            firstPage.drawText('Comunidad: ', { x: startX, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: startX + 110, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= lineHeight;
+            // Comunidad y Población
+            firstPage.drawText('Comunidad: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: START_X + INDENT_X_BIG, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING;
             
-            // Población Beneficiada
-            firstPage.drawText('Población Beneficiada: ', { x: startX, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
-            firstPage.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: startX + 150, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-            currentY -= lineHeight * 2;
+            firstPage.drawText('Población Beneficiada: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
+            firstPage.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: START_X + INDENT_X_BIG + 40, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+            currentY -= LINE_SPACING * 2;
 
             // Personas Involucradas
-            firstPage.drawText('Personas Involucradas:', { x: startX, y: currentY, font: helveticaBoldFont, size: 14, color: TITLE_COLOR });
-            currentY -= lineHeight;
+            if (currentY < CONTENT_END_Y + LINE_SPACING * 4) {
+                 // Aquí se necesitaría lógica de multi-página si la lista fuera muy larga
+                 currentY = Math.max(currentY, CONTENT_END_Y + LINE_SPACING * 4); 
+            }
+            
+            firstPage.drawText('Personas Involucradas:', { x: START_X, y: currentY, font: helveticaBoldFont, size: 14, color: TITLE_COLOR });
+            currentY -= LINE_SPACING;
 
             if (project.personasDirectorio && project.personasDirectorio.length > 0) {
                 project.personasDirectorio.forEach(persona => {
-                    if (currentY < 150) return; // Control simple de fin de página
+                    if (currentY < CONTENT_END_Y + LINE_SPACING) return; 
                     
                     const nombreCompleto = `${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`;
                     
-                    firstPage.drawText(`- ${nombreCompleto}`, { x: startX, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
-                    currentY -= lineHeight * 0.8;
+                    firstPage.drawText(`- ${nombreCompleto}`, { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+                    currentY -= LINE_SPACING_SMALL * 0.8;
                     
                     if (persona.rolEnProyecto) {
-                        firstPage.drawText('Rol: ', { x: startX + 20, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
-                        firstPage.drawText(`${persona.rolEnProyecto}`, { x: startX + 50, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
-                        currentY -= lineHeight * 0.8;
+                        firstPage.drawText('Rol: ', { x: START_X + INDENT_X_SMALL, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
+                        firstPage.drawText(`${persona.rolEnProyecto}`, { x: START_X + INDENT_X_SMALL + 25, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
+                        currentY -= LINE_SPACING_SMALL * 0.8;
                     }
                 });
             } else {
-                firstPage.drawText('No hay personas involucradas registradas.', { x: startX, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
+                firstPage.drawText('No hay personas involucradas registradas.', { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             }
             
-            // 5. Serializar y enviar el PDF modificado
+            // Serializar y enviar el PDF modificado
             const pdfBytes = await pdfDoc.save();
             res.send(Buffer.from(pdfBytes));
 
