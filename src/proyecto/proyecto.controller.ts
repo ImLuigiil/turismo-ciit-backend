@@ -535,13 +535,13 @@ export class ProyectoController {
             
             page.drawImage(embeddedChart, {
                 x: START_X, // Dibujado desde el margen izquierdo
-                y: chartDrawY,
+                y: chartDrawY-10,
                 width: 500, // Usar un ancho mayor para el gráfico de barras (ajusta según tus constantes CHART_WIDTH/HEIGHT)
                 height: 250,
             });
             
             // 3.5 Actualizar posición Y después del gráfico
-            currentY = (chartDrawY - LINE_SPACING)-10;
+            currentY = chartDrawY - LINE_SPACING;
 
             // 4. Serializar y enviar
             const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
