@@ -441,7 +441,7 @@ export class ProyectoController {
                         color: TEXT_COLOR,
                         maxWidth: width - START_X * 2,
                     });
-                    currentY -= LINE_SPACING_SMALL*2.2;
+                    currentY -= LINE_SPACING_SMALL*2.5;
                     
                     // Avance y Fase
                     page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
@@ -541,7 +541,7 @@ export class ProyectoController {
             });
             
             // 3.5 Actualizar posición Y después del gráfico
-            currentY = chartDrawY - LINE_SPACING;
+            currentY = (chartDrawY - LINE_SPACING)-10;
 
             // 4. Serializar y enviar
             const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
