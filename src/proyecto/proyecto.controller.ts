@@ -546,7 +546,7 @@ export class ProyectoController {
                 maxWidth: textWidth,
                 color: TEXT_COLOR,
             });
-            currentY -= LINE_SPACING * 2.2;
+            currentY -= LINE_SPACING * 2.5;
 
             // Información General
             firstPage.drawText('Información General:', { 
