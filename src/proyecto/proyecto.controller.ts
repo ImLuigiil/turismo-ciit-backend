@@ -23,7 +23,7 @@ const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
 // =========================================================================
 
 // Coordenadas y estilos para estampar el contenido en la plantilla
-const START_X = 70;
+const START_X = 90;
 const INDENT_X_SMALL = 85;
 const INDENT_X_BIG = 150;
 const CONTENT_START_Y = 750;
