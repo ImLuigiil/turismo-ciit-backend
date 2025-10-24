@@ -35,8 +35,8 @@ const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
 const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
 
 // Constantes para el gráfico
-const CHART_WIDTH = 350;
-const CHART_HEIGHT = 200;
+const CHART_WIDTH = 250;
+const CHART_HEIGHT = 100;
 const CHART_X = START_X + 100; 
 const CHART_Y_OFFSET = 30; 
 
