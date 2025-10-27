@@ -513,8 +513,7 @@ export class ProyectoController {
             
             // 3.2 Generar Buffer de la imagen (¡En HD!)
             const chartBuffer = await generateBarChartBuffer(chartData, chartLabels, chartColors);
-            
-            // 3.3 Incrustar la imagen en el PDF
+
             let embeddedChart: PDFImage;
             try {
                 embeddedChart = await pdfDoc.embedPng(chartBuffer);
@@ -523,7 +522,6 @@ export class ProyectoController {
                 embeddedChart = await pdfDoc.embedJpg(chartBuffer);
             }
 
-            // 3.4 Dibujar la imagen
             if (currentY < CONTENT_END_Y + CHART_HEIGHT) {
                 const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
                 page = newPageResult[0];
@@ -542,7 +540,6 @@ export class ProyectoController {
 
             currentY = chartDrawY - LINE_SPACING;
 
-            // 4. Serializar y enviar
             const filename = `reporte_general_proyectos_${new Date().toISOString().split('T')[0]}.pdf`;
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
