@@ -534,13 +534,12 @@ export class ProyectoController {
             const chartDrawY = currentY - CHART_HEIGHT; 
             
             page.drawImage(embeddedChart, {
-                x: START_X, // Dibujado desde el margen izquierdo
+                x: START_X,
                 y: chartDrawY+250,
-                width: 500, // Usar un ancho mayor para el gráfico de barras (ajusta según tus constantes CHART_WIDTH/HEIGHT)
+                width: 500,
                 height: 250,
             });
-            
-            // 3.5 Actualizar posición Y después del gráfico
+
             currentY = chartDrawY - LINE_SPACING;
 
             // 4. Serializar y enviar
