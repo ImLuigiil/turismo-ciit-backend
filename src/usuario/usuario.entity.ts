@@ -1,4 +1,3 @@
-// src/usuario/usuario.entity.ts
 import { Entity, PrimaryColumn, Column, ManyToOne, JoinColumn, BeforeInsert, BeforeUpdate } from 'typeorm';
 import { Rol } from '../rol/rol.entity';
 import * as bcrypt from 'bcryptjs'; 

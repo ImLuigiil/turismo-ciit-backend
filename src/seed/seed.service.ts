@@ -1,4 +1,3 @@
-// src/seed/seed.service.ts
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -57,7 +56,6 @@ export class SeedService {
         return;
       }
 
-      // 2. Obtener los municipios de Oaxaca
       const municipalitiesApiUrl = `https://api.copomex.com/query/get_municipio_por_estado/${stateName}?token=${apiKey}`;
       const municipalitiesResponse = await axios.get(municipalitiesApiUrl);
 
@@ -69,7 +67,6 @@ export class SeedService {
         return;
       }
 
-      // 3. Sembrar los municipios
       for (const municipio of municipalitiesFromApi) {
         const municipalityName = municipio;
 

@@ -1,4 +1,3 @@
-// src/data-source.ts
 import { DataSource } from 'typeorm';
 import { Proyecto } from './proyecto/proyecto.entity';
 import { Comunidad } from './comunidad/comunidad.entity';

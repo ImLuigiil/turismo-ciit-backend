@@ -1,11 +1,10 @@
-// src/app.module.ts
+
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule } from '@nestjs/config';
 
-// Importa TODOS tus módulos
 import { ProyectoModule } from './proyecto/proyecto.module';
 import { ComunidadModule } from './comunidad/comunidad.module';
 import { ReunionModule } from './reunion/reunion.module';

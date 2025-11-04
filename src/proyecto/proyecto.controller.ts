@@ -7,7 +7,6 @@ import { FilesInterceptor, FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import { extname, join } from 'path';
 import { ProyectoImagen } from '../proyecto-imagen/proyecto-imagen.entity';
-// Importaciones para PDF y Gráficos
 import * as PDFKit from 'pdfkit'; 
 import { PDFDocument, StandardFonts, rgb, PDFPage, PDFImage } from 'pdf-lib'; 
 import { Response } from 'express';
@@ -16,32 +15,28 @@ import axios from 'axios';
 import { Proyecto } from './proyecto.entity';
 import { ChartJSNodeCanvas } from 'chartjs-node-canvas'; 
 
-// Configuración de rutas (VERIFICA ESTA RUTA EN TU PROYECTO)
+
 const TEMPLATE_PDF_PATH = join(process.cwd(), 'assets', 'hojamembretada.pdf');
 
-// =========================================================================
-// CONSTANTES Y FUNCIONES AUXILIARES 
-// =========================================================================
 
-// Coordenadas y estilos para estampar el contenido en la plantilla
-const START_X = 90; // Margen izquierdo
+const START_X = 90; 
 const INDENT_X_SMALL = 85; 
 const INDENT_X_BIG = 150; 
 const INDENT_X_VALUE = 240; 
-const CONTENT_START_Y = 660; // Posición Y de inicio
-const CONTENT_END_Y = 140; // Límite inferior
-const LINE_SPACING = 25; // Espaciado entre bloques principales
-const LINE_SPACING_ITEM = 20; // Espaciado entre ítems
-const LINE_SPACING_SMALL = 16; // Espaciado para sub-ítems
+const CONTENT_START_Y = 660;
+const CONTENT_END_Y = 140; 
+const LINE_SPACING = 25; 
+const LINE_SPACING_ITEM = 20;
+const LINE_SPACING_SMALL = 16; 
 
-// Constantes para el gráfico
+
 const CHART_WIDTH = 875;
 const CHART_HEIGHT = 500;
 const CHART_X = START_X + 100; 
 const CHART_Y_OFFSET = 30; 
-const DPI_SCALE = 4; // Factor de escala para calidad HD
+const DPI_SCALE = 4; 
 
-// (Funciones auxiliares de cálculo...)
+
 const getPhaseSchedule = (fechaInicio: Date | null, fechaFinAprox: Date | null) => {
     if (!fechaInicio || !fechaFinAprox) return [];
     const startDate = new Date(fechaInicio);
@@ -128,9 +123,7 @@ const formatDate = (date: Date | null) => {
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 };
 
-// --- IMPLEMENTACIÓN DE LA FUNCIÓN DE GENERACIÓN DE GRÁFICOS (Bar Chart) ---
 const generateBarChartBuffer = async (data: number[], labels: string[], colors: string[]): Promise<Buffer> => {
-    // Usamos devicePixelRatio: 4 para generar una imagen de muy alta resolución (HD)
     const chartJSNodeCanvas = new ChartJSNodeCanvas({ 
         width: CHART_WIDTH, 
         height: CHART_HEIGHT,
@@ -138,7 +131,7 @@ const generateBarChartBuffer = async (data: number[], labels: string[], colors: 
     } as any); 
     
     const configuration = {
-        type: 'bar' as const, // CAMBIO CLAVE: Tipo 'bar'
+        type: 'bar' as const,
         data: {
             labels: labels,
             datasets: [{
@@ -179,11 +172,6 @@ const generateBarChartBuffer = async (data: number[], labels: string[], colors: 
     
     return chartJSNodeCanvas.renderToBuffer(configuration, 'image/png');
 };
-
-// =========================================================================
-// FIN CONSTANTES Y FUNCIONES AUXILIARES
-// =========================================================================
-
 
 @Controller('proyectos')
 export class ProyectoController {
@@ -362,19 +350,13 @@ export class ProyectoController {
         return this.proyectoService.concluirFase(+id, justificacion, documentoUrl);
     }
     
-    /**
-     * Helper para agregar una página con el sello de la hoja membretada
-     * y resetear la posición Y
-     */
+
     private async addTemplatePage(pdfDoc: PDFDocument, templateDoc: PDFDocument): Promise<[PDFPage, number]> {
         const [templatePage] = await pdfDoc.copyPages(templateDoc, [0]);
         const newPage = pdfDoc.addPage(templatePage);
-        return [newPage, CONTENT_START_Y]; // Retorna la nueva página y la posición Y de inicio
+        return [newPage, CONTENT_START_Y];
     }
 
-    // =========================================================================
-    // REPORTE GENERAL (CON GRÁFICA DE BARRAS COMO IMAGEN HD Y PORCENTAJE EN BARRAS)
-    // =========================================================================
 
     @Get('report/general')
     @UseGuards(AuthGuard('jwt'))
@@ -386,7 +368,6 @@ export class ProyectoController {
         }
 
         try {
-            // Cargar la plantilla y el nuevo documento
             const existingPdfBytes = fs.readFileSync(TEMPLATE_PDF_PATH);
             const templateDoc = await PDFDocument.load(existingPdfBytes);
             const pdfDoc = await PDFDocument.create();
@@ -397,12 +378,10 @@ export class ProyectoController {
             
             const TEXT_COLOR = rgb(0, 0, 0);
 
-            // 1. Configurar la primera página (USANDO ASIGNACIÓN CLÁSICA PARA EVITAR ERROR 2488)
             const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
             let page: PDFPage = firstPageResult[0];
             let currentY: number = firstPageResult[1];
             
-            // 2. Título principal
             currentY -= LINE_SPACING;
             page.drawText('Reporte General de Avance de Proyectos', { 
                 x: START_X, 
@@ -423,7 +402,6 @@ export class ProyectoController {
                     const avance = calcularAvance(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
                     const colorHex = getProgressColor(proyecto.fechaInicio, proyecto.fechaFinAprox, fase);
                     
-                    // Si el contenido se acerca al límite inferior, añade una nueva página
                     if (currentY < CONTENT_END_Y + LINE_SPACING * 3) {
                         const newPageResult = this.addTemplatePage(pdfDoc, templateDoc);
                         page = newPageResult[0];
@@ -432,7 +410,6 @@ export class ProyectoController {
                     
                     currentY -= LINE_SPACING * 1.5;
 
-                    // Nombre del proyecto
                     page.drawText(`${index + 1}. ${proyecto.nombre}`, { 
                         x: START_X, 
                         y: currentY, 
@@ -443,22 +420,18 @@ export class ProyectoController {
                     });
                     currentY -= LINE_SPACING_SMALL*2.5;
                     
-                    // Avance y Fase
                     page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 10, color: TEXT_COLOR });
                     page.drawText(`Fase ${proyecto.faseActual !== null ? proyecto.faseActual : 'N/A'}`, { x: START_X + 50, y: currentY, font: helveticaFont, size: 10, color: TEXT_COLOR });
                     
-                    // Barra de Progreso
                     const progressBarWidth = 150;
                     const progressBarHeight = 8;
                     const progressX = width - START_X - progressBarWidth; 
                     const progressY = currentY + 1; 
                     
-                    // Conversión de color Hex a RGB para PDF-LIB
                     const barColor = colorHex === '#dc3545' ? rgb(0.86, 0.2, 0.27) : 
                                      colorHex === '#ffc107' ? rgb(1, 0.76, 0.28) : 
                                      colorHex === '#28a745' ? rgb(0.16, 0.65, 0.27) : rgb(0.5, 0.5, 0.5);
                     
-                    // Fondo
                     page.drawRectangle({
                         x: progressX, 
                         y: progressY, 
@@ -469,7 +442,6 @@ export class ProyectoController {
                         borderWidth: 0.5,
                     });
 
-                    // Progreso
                     page.drawRectangle({
                         x: progressX, 
                         y: progressY, 
@@ -478,10 +450,9 @@ export class ProyectoController {
                         color: barColor,
                     });
 
-                    // DIBUJAR PORCENTAJE (NUEVA LÍNEA)
                     page.drawText(`${avance}%`, {
-                        x: progressX + progressBarWidth + 10, // 10 unidades a la derecha de la barra
-                        y: progressY + 0.5, // Centrado verticalmente
+                        x: progressX + progressBarWidth + 10,
+                        y: progressY + 0.5,
                         font: helveticaBoldFont,
                         size: 8,
                         color: TEXT_COLOR,
@@ -491,9 +462,6 @@ export class ProyectoController {
                 });
             }
 
-            // 3. GENERACIÓN E INCRUSTACIÓN DEL GRÁFICO DE BARRAS
-            
-            // Lógica del conteo de colores
             let greenCount = 0; let yellowCount = 0; let redCount = 0; let greyCount = 0;
             proyectos.forEach(proyecto => {
                 const fase = proyecto.faseActual !== null ? proyecto.faseActual : 1;
@@ -506,12 +474,10 @@ export class ProyectoController {
                 }
             });
             
-            // 3.1 Preparar datos
             const chartData = [greenCount, yellowCount, redCount, greyCount];
             const chartLabels = ['En Tiempo / Concluidos', 'Ligeramente Atrasados', 'Muy Atrasados / Vencidos', 'Sin Fechas'];
             const chartColors = ['#28a745', '#ffc107', '#dc3545', '#6c757d'];
             
-            // 3.2 Generar Buffer de la imagen (¡En HD!)
             const chartBuffer = await generateBarChartBuffer(chartData, chartLabels, chartColors);
 
             let embeddedChart: PDFImage;
@@ -552,11 +518,6 @@ export class ProyectoController {
         }
     }
 
-
-    // =========================================================================
-    // REPORTE INDIVIDUAL (PAGINACIÓN Y ALINEACIÓN FINAL)
-    // =========================================================================
-
     @Get(':id/report')
     @UseGuards(AuthGuard('jwt'))
     async generateReport(
@@ -574,12 +535,10 @@ export class ProyectoController {
         }
 
         try {
-            // Cargar el PDF de la plantilla
             const existingPdfBytes = fs.readFileSync(TEMPLATE_PDF_PATH);
             const templateDoc = await PDFDocument.load(existingPdfBytes);
             const pdfDoc = await PDFDocument.create();
 
-            // Configurar la primera página
             const firstPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
             let page: PDFPage = firstPageResult[0]; 
             let currentY: number = firstPageResult[1];
@@ -588,17 +547,14 @@ export class ProyectoController {
             const helveticaBoldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
             const helveticaFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
 
-            // Configurar respuesta HTTP
             const filename = `reporte_proyecto_${project.idProyecto}.pdf`;
             res.setHeader('Content-Type', 'application/pdf');
             res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
 
-            // Colores
             const TEXT_COLOR = rgb(0, 0, 0); 
             const TITLE_COLOR = rgb(0.2, 0.2, 0.2); 
             const textWidth = width - (START_X * 2);
 
-            // Título del Reporte
             currentY -= LINE_SPACING;
             page.drawText(`Reporte del Proyecto: ${project.nombre}`, {
                 x: START_X,
@@ -608,9 +564,8 @@ export class ProyectoController {
                 maxWidth: textWidth,
                 color: TEXT_COLOR,
             });
-            currentY -= LINE_SPACING * 2; // Espacio ampliado para separación visual
+            currentY -= LINE_SPACING * 2; 
 
-            // Información General
             currentY -= LINE_SPACING * 0.7; 
             page.drawText('Información General:', { 
                 x: START_X, 
@@ -621,19 +576,16 @@ export class ProyectoController {
             });
             currentY -= LINE_SPACING_ITEM * 1.5;
             
-            // ID del Proyecto
             page.drawText('ID del Proyecto: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             page.drawText(`${project.idProyecto}`, { x: INDENT_X_VALUE - 55, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
-            // Avance
             const fase = project.faseActual !== null ? project.faseActual : 1;
             const avance = calcularAvance(project.fechaInicio, project.fechaFinAprox, fase);
             page.drawText('Avance: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             page.drawText(`Fase ${fase} (${avance}%)`, { x: INDENT_X_VALUE - 97, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
 
-            // Fechas
             page.drawText('Fecha Inicio: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             page.drawText(`${formatDate(project.fechaInicio)}`, { x: INDENT_X_VALUE - 75, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
@@ -642,8 +594,6 @@ export class ProyectoController {
             page.drawText(`${formatDate(project.fechaFinAprox)}`, { x: INDENT_X_VALUE - 50, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM * 1.5;
 
-
-            // Descripción (manejo multilínea)
             page.drawText('Descripción: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             
             const descriptionText = project.descripcion || 'N/A';
@@ -653,7 +603,6 @@ export class ProyectoController {
 
             let currentXDesc = INDENT_X_VALUE; 
             for (const line of descriptionLines) {
-                // *** LÓGICA DE SALTO DE PÁGINA: Check antes de dibujar la línea de descripción ***
                 if (currentY < CONTENT_END_Y + LINE_SPACING_SMALL) {
                     const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
                     page = newPageResult[0];
@@ -674,7 +623,6 @@ export class ProyectoController {
             }
             currentY -= LINE_SPACING * 0.5; 
             
-            // Comunidad y Población
             page.drawText('Comunidad: ', { x: START_X, y: currentY, font: helveticaBoldFont, size: 12, color: TEXT_COLOR });
             page.drawText(`${project.comunidad ? project.comunidad.nombre : 'N/A'}`, { x: INDENT_X_VALUE -75, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING_ITEM;
@@ -683,8 +631,6 @@ export class ProyectoController {
             page.drawText(`${project.poblacionBeneficiada ? project.poblacionBeneficiada.toLocaleString('en-US') : 'N/A'}`, { x: INDENT_X_VALUE - 15, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             currentY -= LINE_SPACING * 2;
 
-            // Personas Involucradas (Título)
-            // *** LÓGICA DE SALTO DE PÁGINA: Check antes de dibujar el título de la sección ***
             if (currentY < CONTENT_END_Y + LINE_SPACING * 3) { 
                 const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
                 page = newPageResult[0];
@@ -695,16 +641,14 @@ export class ProyectoController {
             page.drawText('Personas Involucradas:', { x: START_X, y: currentY, font: helveticaBoldFont, size: 14, color: TITLE_COLOR });
             currentY -= LINE_SPACING;
 
-            // Personas Involucradas (Lista)
             if (project.personasDirectorio && project.personasDirectorio.length > 0) {
                 for (const persona of project.personasDirectorio) {
                     
-                    // *** LÓGICA DE SALTO DE PÁGINA: Check antes de dibujar a CADA persona (aprox 2.5 líneas) ***
                     if (currentY < CONTENT_END_Y + LINE_SPACING_ITEM * 2.5) { 
                         const newPageResult = await this.addTemplatePage(pdfDoc, templateDoc);
                         page = newPageResult[0];
                         currentY = newPageResult[1];
-                        currentY -= LINE_SPACING_ITEM; // Pequeño ajuste después del salto
+                        currentY -= LINE_SPACING_ITEM;
                     }
 
                     const nombreCompleto = `${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`;
@@ -723,7 +667,6 @@ export class ProyectoController {
                 page.drawText('No hay personas involucradas registradas.', { x: START_X, y: currentY, font: helveticaFont, size: 12, color: TEXT_COLOR });
             }
             
-            // Serializar y enviar el PDF modificado
             const pdfBytes = await pdfDoc.save();
             res.send(Buffer.from(pdfBytes));
 

@@ -1,4 +1,3 @@
-// src/proyecto-imagen/proyecto-imagen.entity.ts
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, JoinColumn } from 'typeorm';
 import { Proyecto } from '../proyecto/proyecto.entity'; 
 
