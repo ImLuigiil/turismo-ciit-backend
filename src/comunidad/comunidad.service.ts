@@ -39,6 +39,7 @@ export class ComunidadService {
     const result = await this.comunidadesRepository.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Comunidad con ID ${id} no encontrada`);
+      //Esto es una prueba
     }
   }
 }
